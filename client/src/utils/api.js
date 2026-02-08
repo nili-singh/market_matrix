@@ -40,7 +40,10 @@ class ApiClient {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Request failed');
+                const error = new Error(data.error || 'Request failed');
+                error.details = data.details;
+                error.response = data;
+                throw error;
             }
 
             return data;
@@ -110,6 +113,12 @@ class ApiClient {
         });
     }
 
+    async deleteTeam(teamId) {
+        return this.request(`/admin/teams/${teamId}`, {
+            method: 'DELETE',
+        });
+    }
+
     async startRound2() {
         return this.request('/admin/round/start', {
             method: 'POST',
@@ -129,16 +138,40 @@ class ApiClient {
     }
 
     async shuffleDeck(currentRound) {
-        return this.request('/admin/card/shuffle', {
+        return this.request('/cards/shuffle', {
             method: 'POST',
             body: JSON.stringify({ currentRound }),
         });
     }
 
     async drawCard(teamId) {
-        return this.request(`/admin/card/draw/${teamId}`, {
+        return this.request(`/cards/draw/${teamId}`, {
             method: 'POST',
         });
+    }
+
+    async previewFiveCards() {
+        return this.request('/cards/preview-five', {
+            method: 'POST',
+        });
+    }
+
+    async drawSpecificCard(teamId, cardId) {
+        return this.request(`/cards/draw/${teamId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cardId }),
+        });
+    }
+
+    async getDeckState() {
+        return this.request('/cards/deck-state');
+    }
+
+    async getDrawnHistory() {
+        return this.request('/cards/drawn-history');
     }
 
     async executeTrade(tradeData) {
@@ -160,6 +193,11 @@ class ApiClient {
             method: 'PUT',
             body: JSON.stringify({ newValue }),
         });
+    }
+
+    async getAssetHistory(rounds) {
+        const query = rounds ? `?rounds=${rounds}` : '';
+        return this.request(`/assets/history${query}`);
     }
 }
 

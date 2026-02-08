@@ -1,11 +1,22 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const teamSchema = new mongoose.Schema({
+    teamId: {
+        type: String,
+        unique: true,
+        // Auto-generated: TEAM_001, TEAM_002, etc.
+    },
     teamName: {
         type: String,
         required: true,
         unique: true,
         trim: true,
+    },
+    password: {
+        type: String,
+        required: true,
+        // Hashed with bcrypt
     },
     members: [{
         name: {
@@ -31,9 +42,9 @@ const teamSchema = new mongoose.Schema({
         type: String, // Name of the member who attempted Round 1
     },
     // Round 2 Trading Data
-    virtualBalance: {
+    balance: {
         type: Number,
-        default: 100000, // ₹1,00,000
+        default: 100000, // ₹1,00,000 (renamed from virtualBalance)
     },
     assets: {
         CRYPTO: {
@@ -84,11 +95,70 @@ const teamSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-// Virtual field for portfolio value
+// Generate random password (8 characters: letters + numbers)
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
+// Generate unique team ID
+async function generateTeamId() {
+    const count = await mongoose.model('Team').countDocuments();
+    const nextNumber = count + 1;
+    return `TEAM_${String(nextNumber).padStart(3, '0')}`;
+}
+
+// Pre-save hook: Auto-generate teamId and hash password
+teamSchema.pre('save', async function (next) {
+    try {
+        // Generate teamId if not present
+        if (!this.teamId) {
+            // Use this.constructor to avoid circular reference
+            const count = await this.constructor.countDocuments();
+            const nextNumber = count + 1;
+            this.teamId = `TEAM_${String(nextNumber).padStart(3, '0')}`;
+        }
+
+        // Hash password if it's new or modified (and not already hashed)
+        if (this.isModified('password') && this.password && !this.password.startsWith('$2')) {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+        }
+
+        next();
+    } catch (error) {
+        console.error('Pre-save hook error:', error);
+        next(error);
+    }
+});
+
+// Method to compare password for login
+teamSchema.methods.comparePassword = async function (candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Virtual field for portfolio value (calculated with current asset prices)
 teamSchema.virtual('portfolioValue').get(function () {
-    // This will be calculated with current asset prices
+    // This will be calculated dynamically with current asset prices
     return 0; // Placeholder
 });
+
+// Keep virtualBalance for backwards compatibility (alias to balance)
+teamSchema.virtual('virtualBalance').get(function () {
+    return this.balance || 100000;
+});
+
+teamSchema.virtual('virtualBalance').set(function (value) {
+    this.balance = value;
+});
+
+// Enable virtuals in toJSON
+teamSchema.set('toJSON', { virtuals: true });
+teamSchema.set('toObject', { virtuals: true });
 
 const Team = mongoose.model('Team', teamSchema);
 

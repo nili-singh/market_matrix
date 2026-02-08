@@ -80,7 +80,7 @@ export default function AssetGraph(container) {
                             displayColors: true,
                             callbacks: {
                                 label: function (context) {
-                                    return `${context.dataset.label}: ₹${context.parsed.y.toFixed(2)}`;
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(0)} points`;
                                 },
                             },
                         },
@@ -105,17 +105,19 @@ export default function AssetGraph(container) {
                             },
                         },
                         y: {
-                            beginAtZero: false,
+                            min: 100,
+                            max: 800,
                             grid: {
                                 color: 'rgba(148, 163, 184, 0.1)',
                             },
                             ticks: {
+                                stepSize: 100,
                                 color: '#64748b',
                                 font: {
                                     family: 'Inter',
                                 },
                                 callback: function (value) {
-                                    return '₹' + value.toFixed(0);
+                                    return value.toFixed(0);
                                 },
                             },
                         },

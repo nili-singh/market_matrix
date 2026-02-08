@@ -41,14 +41,27 @@ router.get('/teams', async (req, res) => {
 
 /**
  * POST /api/admin/teams
- * Create a new team
+ * Create a new team with auto-generated teamId and password
  */
 router.post('/teams', async (req, res) => {
     try {
         const { teamName, members, registrationType, registrationFee, round1Qualified } = req.body;
 
+        // Generate random password (8 characters: letters + numbers)
+        function generatePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        const plainPassword = generatePassword();
+
         const team = new Team({
             teamName,
+            password: plainPassword, // Will be hashed by pre-save hook
             members,
             registrationType,
             registrationFee,
@@ -56,10 +69,48 @@ router.post('/teams', async (req, res) => {
         });
 
         await team.save();
-        res.json({ success: true, team });
+
+        // Return team data WITH credentials (only time we return password)
+        res.json({
+            success: true,
+            team,
+            credentials: {
+                teamId: team.teamId,
+                password: plainPassword, // Plain password for admin to share
+            },
+        });
     } catch (error) {
         console.error('Create team error:', error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Error name:', error.name);
+        console.error('Error code:', error.code);
+        console.error('Error details:', error.errors);
+
+        // Handle duplicate key error
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0];
+            if (field === 'teamName') {
+                return res.status(400).json({
+                    error: 'Team name already exists',
+                    details: 'A team with this name has already been registered. Please choose a different name.'
+                });
+            } else if (field === 'teamId') {
+                return res.status(500).json({
+                    error: 'Team ID generation error',
+                    details: 'An error occurred while generating the team ID. Please try again.'
+                });
+            }
+        }
+
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message).join(', ');
+            return res.status(400).json({
+                error: 'Validation error',
+                details: messages
+            });
+        }
+
+        res.status(500).json({ error: 'Server error', details: error.message });
     }
 });
 
@@ -82,6 +133,30 @@ router.put('/teams/:id', async (req, res) => {
         res.json({ success: true, team });
     } catch (error) {
         console.error('Update team error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * DELETE /api/admin/teams/:id
+ * Delete a team
+ */
+router.delete('/teams/:id', async (req, res) => {
+    try {
+        const team = await Team.findByIdAndDelete(req.params.id);
+
+        if (!team) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('team:deleted', { teamId: req.params.id });
+        }
+
+        res.json({ success: true, message: 'Team deleted successfully' });
+    } catch (error) {
+        console.error('Delete team error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

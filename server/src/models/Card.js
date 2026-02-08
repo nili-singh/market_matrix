@@ -36,6 +36,29 @@ const cardSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    // Visual properties for deck animation
+    position: {
+        x: {
+            type: Number,
+            default: 0,
+        },
+        y: {
+            type: Number,
+            default: 0,
+        },
+        rotation: {
+            type: Number,
+            default: 0,
+        },
+        zIndex: {
+            type: Number,
+            default: 0,
+        },
+    },
+    isDrawn: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
 });

@@ -1,20 +1,20 @@
 import api from '../../utils/api.js';
 
 export default function TradeControls(container) {
-    let teams = [];
-    let assets = [];
+  let teams = [];
+  let assets = [];
 
-    async function render() {
-        try {
-            const [teamsResponse, assetsResponse] = await Promise.all([
-                api.getTeams(),
-                api.getAssets(),
-            ]);
+  async function render() {
+    try {
+      const [teamsResponse, assetsResponse] = await Promise.all([
+        api.getTeams(),
+        api.getAssets(),
+      ]);
 
-            teams = teamsResponse.teams.filter(t => t.round1Qualified);
-            assets = assetsResponse.assets;
+      teams = teamsResponse.teams.filter(t => t.round1Qualified);
+      assets = assetsResponse.assets;
 
-            container.innerHTML = `
+      container.innerHTML = `
         <div class="grid grid-2 gap-md">
           <!-- Market Trading -->
           <div class="glass-card p-lg">
@@ -36,7 +36,7 @@ export default function TradeControls(container) {
                 <select class="input" id="tradeAsset" required>
                   <option value="">-- Select Asset --</option>
                   ${assets.map(asset => `
-                    <option value="${asset.assetType}">${asset.name} (₹${asset.currentValue.toFixed(2)})</option>
+                    <option value="${asset.assetType}">${asset.name} (${asset.currentValue.toFixed(0)} points)</option>
                   `).join('')}
                 </select>
               </div>
@@ -114,58 +114,58 @@ export default function TradeControls(container) {
         </div>
       `;
 
-            // Market trade form
-            const marketTradeForm = document.getElementById('marketTradeForm');
-            marketTradeForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
+      // Market trade form
+      const marketTradeForm = document.getElementById('marketTradeForm');
+      marketTradeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-                const tradeData = {
-                    teamId: document.getElementById('tradeTeam').value,
-                    assetType: document.getElementById('tradeAsset').value,
-                    action: document.getElementById('tradeAction').value,
-                    quantity: parseInt(document.getElementById('tradeQuantity').value),
-                };
+        const tradeData = {
+          teamId: document.getElementById('tradeTeam').value,
+          assetType: document.getElementById('tradeAsset').value,
+          action: document.getElementById('tradeAction').value,
+          quantity: parseInt(document.getElementById('tradeQuantity').value),
+        };
 
-                try {
-                    await api.executeTrade(tradeData);
-                    alert('Trade executed successfully!');
-                    marketTradeForm.reset();
-                } catch (error) {
-                    alert(error.message);
-                }
-            });
-
-            // Team trade form
-            const teamTradeForm = document.getElementById('teamTradeForm');
-            teamTradeForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const tradeData = {
-                    fromTeamId: document.getElementById('fromTeam').value,
-                    toTeamId: document.getElementById('toTeam').value,
-                    assetType: document.getElementById('teamTradeAsset').value,
-                    quantity: parseInt(document.getElementById('teamTradeQuantity').value),
-                    agreedPrice: parseFloat(document.getElementById('agreedPrice').value),
-                };
-
-                if (tradeData.fromTeamId === tradeData.toTeamId) {
-                    alert('Cannot trade with the same team!');
-                    return;
-                }
-
-                try {
-                    await api.executeTeamTrade(tradeData);
-                    alert('Team trade executed successfully!');
-                    teamTradeForm.reset();
-                } catch (error) {
-                    alert(error.message);
-                }
-            });
-
+        try {
+          await api.executeTrade(tradeData);
+          alert('Trade executed successfully!');
+          marketTradeForm.reset();
         } catch (error) {
-            console.error('Error loading trade controls:', error);
+          alert(error.message);
         }
-    }
+      });
 
-    render();
+      // Team trade form
+      const teamTradeForm = document.getElementById('teamTradeForm');
+      teamTradeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const tradeData = {
+          fromTeamId: document.getElementById('fromTeam').value,
+          toTeamId: document.getElementById('toTeam').value,
+          assetType: document.getElementById('teamTradeAsset').value,
+          quantity: parseInt(document.getElementById('teamTradeQuantity').value),
+          agreedPrice: parseFloat(document.getElementById('agreedPrice').value),
+        };
+
+        if (tradeData.fromTeamId === tradeData.toTeamId) {
+          alert('Cannot trade with the same team!');
+          return;
+        }
+
+        try {
+          await api.executeTeamTrade(tradeData);
+          alert('Team trade executed successfully!');
+          teamTradeForm.reset();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+    } catch (error) {
+      console.error('Error loading trade controls:', error);
+    }
+  }
+
+  render();
 }

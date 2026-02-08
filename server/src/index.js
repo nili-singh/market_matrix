@@ -10,6 +10,13 @@ import setupSocketHandlers from './sockets/gameSocket.js';
 import authRoutes from './routes/auth.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
+import cardRoutes from './routes/cardRoutes.js';
+import assetHistoryRoutes from './routes/assetHistoryRoutes.js';
+import roundRoutes from './routes/roundRoutes.js';
+import superadminAuthRoutes from './routes/superadminAuth.js';
+import superadminRoutes from './routes/superadminRoutes.js';
+import teamAuthRoutes from './routes/teamAuth.js';
+import teamDataRoutes from './routes/teamDataRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -37,8 +44,15 @@ app.set('io', io);
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/team-auth', teamAuthRoutes);
+app.use('/api/team-data', teamDataRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cards', cardRoutes);
+app.use('/api/assets', assetHistoryRoutes);
+app.use('/api/rounds', roundRoutes);
+app.use('/api/superadmin', superadminAuthRoutes);
+app.use('/api/superadmin', superadminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

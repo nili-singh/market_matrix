@@ -24,9 +24,14 @@ export default async function adminDashboard(container) {
             <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">Market Matrix Admin</h1>
             <p class="text-muted" style="margin: 0;">Control Panel</p>
           </div>
-          <button class="btn btn-secondary" id="logoutBtn">
-            Logout
-          </button>
+          <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-outline" id="homeBtn">
+              🏠 Back to Home
+            </button>
+            <button class="btn btn-secondary" id="logoutBtn">
+              Logout
+            </button>
+          </div>
         </div>
       </header>
       
@@ -87,6 +92,11 @@ export default async function adminDashboard(container) {
   document.getElementById('logoutBtn').addEventListener('click', () => {
     api.logout();
     window.navigateTo('/admin');
+  });
+
+  // Back to Home
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    window.navigateTo('/');
   });
 
   // Load components

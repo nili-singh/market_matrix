@@ -2,8 +2,8 @@
 
 export const GAME_CONFIG = {
     INITIAL_BALANCE: 100000, // ₹1,00,000
-    MIN_ROUNDS: 6,
-    MAX_ROUNDS: 8,
+    MIN_ROUNDS: 1,
+    MAX_ROUNDS: 20,
     MAX_QUALIFIED_TEAMS: 10,
 };
 
@@ -11,38 +11,38 @@ export const GAME_CONFIG = {
 export const ASSETS = {
     CRYPTO: {
         name: 'Crypto Token',
-        baseValue: 250,
-        buyThreshold: 500,  // Buy 500 units → +10%
-        sellThreshold: 400, // Sell 400 units → -10%
-        priceChangePercent: 10,
+        baseValue: 200,  // Updated from 250 to 200 points
+        buyThreshold: 100,  // Buy 100 units → +25%
+        sellThreshold: 80, // Resell 80 units → -25%
+        priceChangePercent: 25,  // Updated from 10% to 25%
     },
     STOCK: {
         name: 'Stock',
-        baseValue: 300,
-        buyThreshold: 400,
-        sellThreshold: 300,
-        priceChangePercent: 10,
+        baseValue: 250,  // Updated from 300 to 250 points
+        buyThreshold: 100,
+        sellThreshold: 80,
+        priceChangePercent: 25,
     },
     GOLD: {
         name: 'Gold Coin',
-        baseValue: 500,
-        buyThreshold: 250,
-        sellThreshold: 200,
-        priceChangePercent: 10,
+        baseValue: 300,  // Updated from 340 to 300 points
+        buyThreshold: 100,
+        sellThreshold: 80,
+        priceChangePercent: 25,
     },
     EURO_BOND: {
         name: 'Euro Bond',
-        baseValue: 750,
-        buyThreshold: 150,
-        sellThreshold: 130,
-        priceChangePercent: 10,
+        baseValue: 350,  // Updated from 750 to 350 points
+        buyThreshold: 100,
+        sellThreshold: 80,
+        priceChangePercent: 25,
     },
     TREASURY_BILL: {
         name: 'Treasury Bill',
-        baseValue: 900,
-        buyThreshold: 120,
-        sellThreshold: 110,
-        priceChangePercent: 10,
+        baseValue: 400,  // Updated from 900 to 400 points
+        buyThreshold: 100,
+        sellThreshold: 80,
+        priceChangePercent: 25,
     },
 };
 
@@ -56,20 +56,20 @@ export const CARD_CATEGORIES = {
 
 // Category 1: Asset Increase Cards (12 cards)
 export const ASSET_INCREASE_CARDS = [
-    { asset: 'CRYPTO', minPercent: 10, maxPercent: 20, count: 3 },
-    { asset: 'STOCK', minPercent: 8, maxPercent: 15, count: 3 },
-    { asset: 'GOLD', minPercent: 6, maxPercent: 10, count: 2 },
-    { asset: 'EURO_BOND', minPercent: 5, maxPercent: 8, count: 2 },
-    { asset: 'TREASURY_BILL', minPercent: 3, maxPercent: 5, count: 2 }, // FIXED: Should increase
+    { asset: 'CRYPTO', minPercent: 30, maxPercent: 30, count: 3 },
+    { asset: 'STOCK', minPercent: 35, maxPercent: 35, count: 3 },
+    { asset: 'GOLD', minPercent: 45, maxPercent: 45, count: 2 },
+    { asset: 'EURO_BOND', minPercent: 40, maxPercent: 40, count: 2 },
+    { asset: 'TREASURY_BILL', minPercent: 45, maxPercent: 45, count: 2 },
 ];
 
 // Category 2: Asset Decrease Cards (12 cards)
 export const ASSET_DECREASE_CARDS = [
-    { asset: 'CRYPTO', minPercent: -20, maxPercent: -10, count: 3 },
-    { asset: 'STOCK', minPercent: -15, maxPercent: -8, count: 3 },
-    { asset: 'GOLD', minPercent: -10, maxPercent: -6, count: 2 },
-    { asset: 'EURO_BOND', minPercent: -8, maxPercent: -5, count: 2 },
-    { asset: 'TREASURY_BILL', minPercent: -5, maxPercent: -3, count: 2 },
+    { asset: 'CRYPTO', minPercent: -45, maxPercent: -45, count: 3 },
+    { asset: 'STOCK', minPercent: -30, maxPercent: -30, count: 3 },
+    { asset: 'GOLD', minPercent: -35, maxPercent: -35, count: 2 },
+    { asset: 'EURO_BOND', minPercent: -30, maxPercent: -30, count: 2 },
+    { asset: 'TREASURY_BILL', minPercent: -40, maxPercent: -40, count: 2 },
 ];
 
 // Category 3: Inter-Team Impact Cards (8 cards)

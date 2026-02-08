@@ -2,20 +2,20 @@ import api from '../../utils/api.js';
 import socket from '../../utils/socket.js';
 
 export default function Leaderboard(container) {
-    let leaderboard = [];
-    let assets = [];
+  let leaderboard = [];
+  let assets = [];
 
-    async function render() {
-        try {
-            const [leaderboardResponse, assetsResponse] = await Promise.all([
-                api.getLeaderboard(),
-                api.getAssets(),
-            ]);
+  async function render() {
+    try {
+      const [leaderboardResponse, assetsResponse] = await Promise.all([
+        api.getLeaderboard(),
+        api.getAssets(),
+      ]);
 
-            leaderboard = leaderboardResponse.leaderboard;
-            assets = assetsResponse.assets;
+      leaderboard = leaderboardResponse.leaderboard;
+      assets = assetsResponse.assets;
 
-            container.innerHTML = `
+      container.innerHTML = `
         <div class="glass-card p-lg">
           <h3 class="mb-md">Team Leaderboard</h3>
           
@@ -47,14 +47,14 @@ export default function Leaderboard(container) {
                       </span>
                     </td>
                     <td style="font-weight: 600;">${team.teamName}</td>
-                    <td>₹${team.balance.toLocaleString()}</td>
+                    <td>${team.balance.toLocaleString()} points</td>
                     <td>${team.assets.CRYPTO || 0}</td>
                     <td>${team.assets.STOCK || 0}</td>
                     <td>${team.assets.GOLD || 0}</td>
                     <td>${team.assets.EURO_BOND || 0}</td>
                     <td>${team.assets.TREASURY_BILL || 0}</td>
                     <td style="font-weight: 700; color: var(--color-accent-primary);">
-                      ₹${team.portfolioValue.toLocaleString()}
+                      ${team.portfolioValue.toLocaleString()} points
                     </td>
                   </tr>
                 `).join('')}
@@ -64,24 +64,28 @@ export default function Leaderboard(container) {
         </div>
       `;
 
-        } catch (error) {
-            console.error('Error loading leaderboard:', error);
-            container.innerHTML = `
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+      container.innerHTML = `
         <div class="glass-card p-lg">
           <p class="text-danger">Error loading leaderboard</p>
         </div>
       `;
-        }
     }
+  }
 
-    // Listen for updates
-    socket.on('leaderboard:update', () => {
-        render();
-    });
-
-    socket.on('trade:executed', () => {
-        render();
-    });
-
+  // Listen for updates
+  socket.on('leaderboard:update', () => {
     render();
+  });
+
+  socket.on('leaderboard:updated', () => {
+    render();
+  });
+
+  socket.on('trade:executed', () => {
+    render();
+  });
+
+  render();
 }

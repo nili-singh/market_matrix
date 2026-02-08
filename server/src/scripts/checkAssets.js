@@ -1,0 +1,34 @@
+import mongoose from 'mongoose';
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/market_matrix';
+
+const checkAssets = async () => {
+    try {
+        await mongoose.connect(MONGODB_URI);
+        console.log('✅ Connected to MongoDB\n');
+
+        const assets = await mongoose.connection.collection('assets').find({}).toArray();
+
+        console.log(`Found ${assets.length} assets:\n`);
+
+        assets.forEach(asset => {
+            console.log(`${asset.assetType}:`);
+            console.log(`  Name: ${asset.name}`);
+            console.log(`  Base Value: ${asset.baseValue}`);
+            console.log(`  Current Value: ${asset.currentValue}`);
+            console.log(`  Price History Length: ${asset.priceHistory?.length || 0}`);
+            if (asset.priceHistory && asset.priceHistory.length > 0) {
+                console.log(`  Latest: Round ${asset.priceHistory[asset.priceHistory.length - 1].round}, Value: ${asset.priceHistory[asset.priceHistory.length - 1].value}`);
+            }
+            console.log('');
+        });
+
+        await mongoose.disconnect();
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error:', error);
+        process.exit(1);
+    }
+};
+
+checkAssets();

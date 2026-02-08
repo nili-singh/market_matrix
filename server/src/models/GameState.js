@@ -40,6 +40,47 @@ const gameStateSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    // Deck visual state for animations
+    deckState: {
+        positions: [{
+            cardId: String,
+            x: Number,
+            y: Number,
+            rotation: Number,
+            zIndex: Number,
+        }],
+        isShuffling: {
+            type: Boolean,
+            default: false,
+        },
+        lastShuffleTimestamp: Date,
+    },
+    // Track drawn cards (cannot be reused)
+    drawnCards: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Card',
+    }],
+    // Round Snapshots (for one-step rollback)
+    roundSnapshots: [{
+        round: Number,
+        timestamp: Date,
+        assetValues: {
+            type: Map,
+            of: {
+                CRYPTO: Number,
+                STOCK: Number,
+                GOLD: Number,
+                EURO_BOND: Number,
+                TREASURY_BILL: Number,
+            },
+        },
+        leaderboard: [{
+            teamId: mongoose.Schema.Types.ObjectId,
+            teamName: String,
+            totalValue: Number,
+        }],
+        drawnCardIds: [mongoose.Schema.Types.ObjectId],
+    }],
     // Round History
     roundHistory: [{
         round: Number,

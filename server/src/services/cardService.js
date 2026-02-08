@@ -30,6 +30,7 @@ class CardService {
                         min: cardDef.minPercent,
                         max: cardDef.maxPercent,
                     },
+                    isDrawn: false,
                 });
             }
         }
@@ -47,6 +48,7 @@ class CardService {
                         min: cardDef.minPercent,
                         max: cardDef.maxPercent,
                     },
+                    isDrawn: false,
                 });
             }
         }
@@ -60,6 +62,7 @@ class CardService {
                     type: cardDef.type,
                     description: cardDef.description,
                     specialEffect: cardDef.type,
+                    isDrawn: false,
                 });
             }
         }
@@ -72,6 +75,7 @@ class CardService {
                     category: 'NEUTRAL',
                     type: cardDef.type,
                     description: cardDef.description,
+                    isDrawn: false,
                 });
             }
         }
@@ -83,20 +87,60 @@ class CardService {
 
     /**
      * Shuffle card deck (before even rounds)
+     * Only shuffles cards that haven't been drawn yet
      */
     async shuffleDeck(currentRound) {
-        const allCards = await Card.find();
-        const shuffled = this.shuffleArray([...allCards]);
+        let gameState = await GameState.findById('GAME_STATE');
 
-        const gameState = await GameState.findById('GAME_STATE');
-        if (gameState) {
-            gameState.cardDeck = shuffled.map(card => card._id);
-            gameState.currentCardIndex = 0;
-            gameState.lastShuffleRound = currentRound;
-            await gameState.save();
+        // Create GameState if it doesn't exist
+        if (!gameState) {
+            gameState = new GameState({
+                _id: 'GAME_STATE',
+                currentRound: 0,
+                currentPhase: 'REGISTRATION',
+                cardDeck: [],
+                drawnCards: [],
+                nextTeamEffects: {
+                    tradeFrozen: false,
+                    marketShock: false,
+                    reverseImpact: false,
+                },
+            });
         }
 
-        return shuffled;
+        // Auto-initialize cards if they don't exist
+        const cardCount = await Card.countDocuments();
+        if (cardCount === 0) {
+            console.log('No cards found, initializing deck...');
+            await this.initializeCards();
+        }
+
+        // Get all cards that haven't been drawn
+        const allCards = await Card.find({ isDrawn: false });
+        const shuffled = this.shuffleArray([...allCards]);
+
+        // Generate random positions and rotations for shuffle animation
+        const deckState = {
+            positions: shuffled.map((card, index) => ({
+                cardId: card.cardId,
+                x: index * 2, // Slight horizontal offset for overlapping
+                y: 0,
+                rotation: Math.random() * 8 - 4, // Random rotation ±4 degrees
+                zIndex: index,
+            })),
+            isShuffling: false,
+            lastShuffleTimestamp: new Date(),
+        };
+
+        gameState.cardDeck = shuffled.map(card => card._id);
+        gameState.currentCardIndex = 0;
+        gameState.lastShuffleRound = currentRound;
+        gameState.deckState = deckState;
+        await gameState.save();
+
+        console.log(`Deck shuffled: ${shuffled.length} cards`);
+
+        return { shuffled, deckState };
     }
 
     /**
@@ -122,9 +166,84 @@ class CardService {
         const cardId = gameState.cardDeck[gameState.currentCardIndex];
         const card = await Card.findById(cardId);
 
+        // Mark card as drawn
+        card.isDrawn = true;
+        await card.save();
+
+        // Add to drawn cards list
+        if (!gameState.drawnCards.includes(cardId)) {
+            gameState.drawnCards.push(cardId);
+        }
+
         // Advance card index (loop back if at end)
         gameState.currentCardIndex = (gameState.currentCardIndex + 1) % gameState.cardDeck.length;
         await gameState.save();
+
+        return { card, skipped: false };
+    }
+
+    /**
+     * Preview 5 random cards from deck WITHOUT drawing them
+     * Used for the 5-card selection mechanic
+     */
+    async previewFiveCards() {
+        // Get all undrawn cards
+        const availableCards = await Card.find({ isDrawn: false });
+
+        if (availableCards.length < 5) {
+            throw new Error(`Not enough cards in deck. Available: ${availableCards.length}, Need: 5`);
+        }
+
+        // Shuffle and take first 5
+        const shuffled = this.shuffleArray(availableCards);
+        const fiveCards = shuffled.slice(0, 5);
+
+        // Return card details (but don't mark as drawn yet)
+        return fiveCards.map(card => ({
+            _id: card._id,
+            cardId: card.cardId,
+            category: card.category,
+            type: card.type,
+            description: card.description,
+            targetAsset: card.targetAsset,
+            percentageChange: card.percentageChange,
+            specialEffect: card.specialEffect
+        }));
+    }
+
+    /**
+     * Draw a SPECIFIC card by ID (used when player selects from 5 previewed)
+     */
+    async drawSpecificCard(teamId, cardId) {
+        const team = await Team.findById(teamId);
+        if (!team) throw new Error('Team not found');
+
+        // Check if team has insider information (skip card draw)
+        if (team.hasInsiderInfo) {
+            team.hasInsiderInfo = false;
+            await team.save();
+            return { skipped: true, reason: 'Insider Information - Card draw skipped' };
+        }
+
+        // Find the specific card
+        const card = await Card.findOne({ cardId: cardId, isDrawn: false });
+
+        if (!card) {
+            throw new Error(`Card ${cardId} not found or already drawn`);
+        }
+
+        // Mark card as drawn
+        card.isDrawn = true;
+        await card.save();
+
+        // Add to game state drawn cards
+        const gameState = await GameState.findById('GAME_STATE');
+        if (gameState && !gameState.drawnCards.includes(card._id)) {
+            gameState.drawnCards.push(card._id);
+            await gameState.save();
+        }
+
+        console.log(`Specific card drawn: ${cardId} for team ${teamId}`);
 
         return { card, skipped: false };
     }
@@ -252,6 +371,35 @@ class CardService {
         }
 
         return null;
+    }
+
+    /**
+     * Get current deck state for visualization
+     */
+    async getDeckState() {
+        const gameState = await GameState.findById('GAME_STATE');
+        if (!gameState) return null;
+
+        const cards = await Card.find({ isDrawn: false }).select('cardId category type');
+
+        return {
+            totalCards: cards.length,
+            drawnCards: gameState.drawnCards.length,
+            remainingCards: cards.length,
+            deckState: gameState.deckState,
+            cards: cards,
+        };
+    }
+
+    /**
+     * Set shuffle status (for animation sync)
+     */
+    async setShuffleStatus(isShuffling) {
+        const gameState = await GameState.findById('GAME_STATE');
+        if (gameState) {
+            gameState.deckState.isShuffling = isShuffling;
+            await gameState.save();
+        }
     }
 
     /**
