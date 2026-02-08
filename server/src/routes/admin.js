@@ -320,6 +320,98 @@ router.post('/trade', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/trade/batch
+ * Execute multiple trades for a team at once
+ */
+router.post('/trade/batch', async (req, res) => {
+    try {
+        const { teamId, action, trades } = req.body;
+
+        if (!teamId || !action || !trades || !Array.isArray(trades) || trades.length === 0) {
+            return res.status(400).json({ error: 'Invalid batch trade data' });
+        }
+
+        const gameState = await roundService.getCurrentState();
+        const results = [];
+        let anyPriceChanged = false;
+
+        // Execute each trade sequentially
+        for (const trade of trades) {
+            try {
+                const { assetType, quantity } = trade;
+
+                if (!assetType || !quantity || quantity <= 0) {
+                    results.push({
+                        assetType,
+                        success: false,
+                        message: 'Invalid quantity'
+                    });
+                    continue;
+                }
+
+                let result;
+                if (action === 'BUY') {
+                    result = await tradingService.executeBuy(teamId, assetType, quantity, gameState.currentRound);
+                } else if (action === 'SELL') {
+                    result = await tradingService.executeSell(teamId, assetType, quantity, gameState.currentRound);
+                } else {
+                    results.push({
+                        assetType,
+                        success: false,
+                        message: 'Invalid action'
+                    });
+                    continue;
+                }
+
+                if (result.priceChanged) {
+                    anyPriceChanged = true;
+                }
+
+                results.push({
+                    assetType,
+                    success: true,
+                    message: `${action} successful`,
+                    newBalance: result.team.virtualBalance
+                });
+
+            } catch (error) {
+                results.push({
+                    assetType: trade.assetType,
+                    success: false,
+                    message: error.message
+                });
+            }
+        }
+
+        // Emit socket events after all trades
+        if (anyPriceChanged) {
+            const assets = await assetService.getAllAssets();
+            req.app.get('io').emit('asset:update', { assets });
+        }
+
+        req.app.get('io').emit('trade:executed', {
+            teamId,
+            action,
+            batch: true,
+        });
+
+        const leaderboard = await tradingService.getLeaderboard();
+        req.app.get('io').emit('leaderboard:update', { leaderboard });
+
+        res.json({
+            success: true,
+            results,
+            successCount: results.filter(r => r.success).length,
+            failureCount: results.filter(r => !r.success).length
+        });
+    } catch (error) {
+        console.error('Batch trade error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+/**
  * POST /api/admin/trade/team-to-team
  * Execute team-to-team trade
  */

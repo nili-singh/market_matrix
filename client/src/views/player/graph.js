@@ -25,7 +25,8 @@ export default function PlayerGraph(container) {
                             </svg>
                             Back to Home
                         </button>
-                        <h1 class="graph-title">Market Matrix - Live Asset Values</h1>
+                        <img src="/tycoons-logo.png" alt="TYCOONS" style="height: 50px; margin-left: 1.5rem; margin-right: 1rem;" />
+                        <h1 class="graph-title">Market Matrix - Asset Values</h1>
                     </div>
                     <div class="live-indicator">
                         <span class="pulse-dot"></span>
@@ -33,23 +34,48 @@ export default function PlayerGraph(container) {
                     </div>
                 </header>
                 
-                <div id="chartContainer" class="chart-wrapper"></div>
-                
-                <footer class="graph-footer">
-                    <p>Real-time asset value tracking</p>
-                </footer>
+                <div class="dual-graph-layout">
+                    <!-- R0 Graph (Base Values) -->
+                    <div class="graph-section base-graph-section">
+                        <div class="graph-section-header">
+                            <h2>R0 - Base Asset Values</h2>
+                            <p class="graph-subtitle">Initial starting values (constant)</p>
+                        </div>
+                        <div id="baseChartContainer" class="chart-wrapper"></div>
+                    </div>
+                    
+                    <!-- R1+ Graph (Live Values) -->
+                    <div class="graph-section live-graph-section">
+                        <div class="graph-section-header">
+                            <h2>R1+ - Live Asset Values</h2>
+                            <p class="graph-subtitle">Real-time trading & card effects</p>
+                        </div>
+                        <div id="liveChartContainer" class="chart-wrapper"></div>
+                    </div>
+                </div>
             </div>
         `;
 
-        // Initialize chart after DOM is fully rendered
+        // Initialize both charts after DOM is fully rendered
         requestAnimationFrame(() => {
-            const chartContainer = document.getElementById('chartContainer');
-            if (chartContainer) {
+            const baseContainer = document.getElementById('baseChartContainer');
+            const liveContainer = document.getElementById('liveChartContainer');
+
+            if (baseContainer && liveContainer) {
                 // Wait one more frame to ensure layout is complete
                 requestAnimationFrame(() => {
-                    chart = AnimatedBarChart(chartContainer, {
-                        width: chartContainer.clientWidth,
-                        height: chartContainer.clientHeight,
+                    // Initialize R0 chart (base values)
+                    const baseChart = AnimatedBarChart(baseContainer, {
+                        width: baseContainer.clientWidth,
+                        height: baseContainer.clientHeight,
+                        mode: 'base', // new mode for base values
+                    });
+
+                    // Initialize R1+ chart (live values)
+                    chart = AnimatedBarChart(liveContainer, {
+                        width: liveContainer.clientWidth,
+                        height: liveContainer.clientHeight,
+                        mode: 'live', // existing behavior
                     });
                 });
             }

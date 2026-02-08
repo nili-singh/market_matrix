@@ -79,7 +79,17 @@ router.get('/history', async (req, res) => {
 
         res.json({
             success: true,
-            data: graphData,
+            data: {
+                ...graphData,
+                // Add R0 (base values) data
+                baseValueRound: {
+                    round: 0,
+                    values: assets.reduce((acc, asset) => {
+                        acc[asset.assetType] = asset.baseValue;
+                        return acc;
+                    }, {}),
+                },
+            },
         });
     } catch (error) {
         console.error('Get asset history error:', error);

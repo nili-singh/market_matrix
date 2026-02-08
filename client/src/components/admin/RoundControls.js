@@ -97,7 +97,7 @@ export default function RoundControls(container) {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
               },
             });
 
@@ -140,7 +140,7 @@ export default function RoundControls(container) {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
               },
             });
 

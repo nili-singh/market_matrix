@@ -5,8 +5,8 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(135deg, #0f1117 0%, #1a1d29 100%);
-    /* Dark gradient */
+    background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+    /* Pure black gradient */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     overflow: hidden;
 }
@@ -16,11 +16,11 @@
     justify-content: center;
     align-items: center;
     padding: 2rem 3rem;
-    background: rgba(15, 17, 23, 0.85);
-    /* Dark semi-transparent */
+    background: rgba(0, 0, 0, 0.9);
+    /* Pure black semi-transparent */
     backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(136, 13, 30, 0.3);
     z-index: 10;
     position: relative;
 }
@@ -114,14 +114,62 @@
     }
 }
 
+/* Dual Graph Layout */
+.dual-graph-layout {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem 3rem;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.graph-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 10, 10, 0.8);
+    border-radius: 12px;
+    border: 1px solid rgba(136, 13, 30, 0.2);
+    padding: 1.5rem;
+    min-width: 0;
+}
+
+.graph-section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.graph-section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #E5E7EB;
+    margin: 0 0 0.5rem 0;
+}
+
+.graph-subtitle {
+    font-size: 0.875rem;
+    color: #9CA3AF;
+    margin: 0;
+}
+
+.base-graph-section {
+    /* R0 specific styling */
+    border-left: 3px solid #880d1e;
+}
+
+.live-graph-section {
+    /* R1+ specific styling */
+    border-left: 3px solid #DC2626;
+}
+
 .chart-wrapper {
     flex: 1 1 auto;
-    padding: 2rem 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    max-height: calc(100vh - 200px);
+    position: relative;
 }
 
 .chart-wrapper>div {
@@ -131,14 +179,14 @@
 
 .graph-footer {
     padding: 1.5rem 3rem;
-    background: rgba(15, 17, 23, 0.85);
-    /* Dark semi-transparent */
+    background: rgba(0, 0, 0, 0.9);
+    /* Pure black semi-transparent */
     backdrop-filter: blur(10px);
     text-align: center;
     color: #9CA3AF;
     /* Muted grey */
     font-size: 0.875rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(136, 13, 30, 0.3);
 }
 
 .graph-footer p {
@@ -147,9 +195,9 @@
 
 /* Tooltip styling for dark theme */
 #tooltip {
-    background: rgba(15, 17, 23, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.95) !important;
+    border: 1px solid rgba(136, 13, 30, 0.4);
+    box-shadow: 0 8px 24px rgba(136, 13, 30, 0.6);
 }
 
 /* Responsive adjustments for projectors */

@@ -160,6 +160,8 @@ function renderLanding() {
       </div>
 
       <div class="hero-content">
+        <img src="/tycoons-logo.png" alt="TYCOONS - Rule the Floor" style="max-width: 500px; width: 90%; height: auto; margin: 0 auto 2rem auto; display: block;" />
+        
         <h1 style="font-size: 4rem; margin-bottom: 1rem; background: linear-gradient(135deg, #e8eef5 0%, #b8c5d6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
           Market Matrix
         </h1>

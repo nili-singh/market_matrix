@@ -42,7 +42,7 @@ class CardService {
                     cardId: `CARD_${cardCounter++}`,
                     category: 'ASSET_DECREASE',
                     type: `${cardDef.asset}_DECREASE`,
-                    description: `${cardDef.asset} value decreases by ${Math.abs(cardDef.maxPercent)}% to ${Math.abs(cardDef.minPercent)}%`,
+                    description: `${cardDef.asset} value decreases by ${Math.abs(cardDef.maxPercent)}%`,
                     targetAsset: cardDef.asset,
                     percentageChange: {
                         min: cardDef.minPercent,

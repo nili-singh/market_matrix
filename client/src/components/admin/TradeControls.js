@@ -111,6 +111,72 @@ export default function TradeControls(container) {
               </button>
             </form>
           </div>
+          
+          <!-- Multi-Asset Batch Trading -->
+          <div class="glass-card p-lg" style="grid-column: 1 / -1;">
+            <h3 class="mb-md">Multi-Asset Batch Trading</h3>
+            <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 1rem;">Execute multiple asset trades for a team simultaneously</p>
+            
+            <form id="batchTradeForm">
+              <div class="grid grid-2 gap-md mb-md">
+                <div class="form-group">
+                  <label class="form-label">Team</label>
+                  <select class="input" id="batchTradeTeam" required>
+                    <option value="">-- Select Team --</option>
+                    ${teams.map(team => `
+                      <option value="${team._id}">${team.teamName}</option>
+                    `).join('')}
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">Action</label>
+                  <select class="input" id="batchTradeAction" required>
+                    <option value="">-- Select Action --</option>
+                    <option value="BUY">Buy</option>
+                    <option value="SELL">Sell</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-group mb-md">
+                <label class="form-label">Select Assets to Trade</label>
+                <div style="background: rgba(0, 0, 0, 0.2); padding: 1rem; border-radius: 8px;">
+                  ${assets.map(asset => `
+                    <div style="display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                      <input 
+                        type="checkbox" 
+                        id="asset_${asset.assetType}" 
+                        class="asset-checkbox"
+                        data-asset-type="${asset.assetType}"
+                        style="width: 20px; height: 20px; margin-right: 1rem; cursor: pointer;"
+                      />
+                      <div style="flex: 1;">
+                        <div style="font-weight: 500;">${asset.name}</div>
+                        <div style="font-size: 0.875rem; color: #9CA3AF;">
+                          Current Price: ${asset.currentValue.toFixed(0)} points
+                          <span id="teamHolding_${asset.assetType}" class="team-holding" style="margin-left: 1rem; color: #60A5FA;"></span>
+                        </div>
+                      </div>
+                      <input 
+                        type="number" 
+                        id="quantity_${asset.assetType}" 
+                        class="input asset-quantity"
+                        placeholder="Quantity"
+                        min="1"
+                        disabled
+                        style="width: 150px; margin-left: 1rem;"
+                      />
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-success" style="width: 100%;">
+                🔄 Execute Batch Trade
+              </button>
+            </form>
+          </div>
         </div>
       `;
 
@@ -159,6 +225,135 @@ export default function TradeControls(container) {
           teamTradeForm.reset();
         } catch (error) {
           alert(error.message);
+        }
+      });
+
+      // Batch trade form
+      const batchTradeForm = document.getElementById('batchTradeForm');
+      const batchTradeTeam = document.getElementById('batchTradeTeam');
+      const checkboxes = document.querySelectorAll('.asset-checkbox');
+
+      // Enable/disable quantity inputs based on checkbox state
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          const assetType = e.target.dataset.assetType;
+          const quantityInput = document.getElementById(`quantity_${assetType}`);
+          quantityInput.disabled = !e.target.checked;
+          if (!e.target.checked) {
+            quantityInput.value = '';
+          }
+        });
+      });
+
+      // Load team holdings when team is selected
+      batchTradeTeam.addEventListener('change', async (e) => {
+        const teamId = e.target.value;
+
+        // Clear all holdings
+        document.querySelectorAll('.team-holding').forEach(span => {
+          span.textContent = '';
+        });
+
+        if (!teamId) return;
+
+        try {
+          // Find the selected team
+          const selectedTeam = teams.find(t => t._id === teamId);
+          if (selectedTeam && selectedTeam.assets) {
+            // Display current holdings for each asset
+            Object.keys(selectedTeam.assets).forEach(assetType => {
+              const holdingSpan = document.getElementById(`teamHolding_${assetType}`);
+              if (holdingSpan) {
+                const quantity = selectedTeam.assets[assetType] || 0;
+                holdingSpan.textContent = `(Team owns: ${quantity})`;
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error loading team holdings:', error);
+        }
+      });
+
+      // Submit batch trade
+      batchTradeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const teamId = document.getElementById('batchTradeTeam').value;
+        const action = document.getElementById('batchTradeAction').value;
+
+        // Collect selected assets
+        const trades = [];
+        checkboxes.forEach(checkbox => {
+          if (checkbox.checked) {
+            const assetType = checkbox.dataset.assetType;
+            const quantity = parseInt(document.getElementById(`quantity_${assetType}`).value);
+
+            if (quantity && quantity > 0) {
+              trades.push({ assetType, quantity });
+            }
+          }
+        });
+
+        // Validate at least one asset selected
+        if (trades.length === 0) {
+          alert('Please select at least one asset and enter a quantity');
+          return;
+        }
+
+        try {
+          const submitBtn = batchTradeForm.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Executing...';
+
+          const result = await api.executeBatchTrade({
+            teamId,
+            action,
+            trades
+          });
+
+          // Show results
+          const successCount = result.successCount || 0;
+          const failureCount = result.failureCount || 0;
+
+          let message = `Batch Trade Complete!\n\n`;
+          message += `✅ Successful: ${successCount}\n`;
+          if (failureCount > 0) {
+            message += `❌ Failed: ${failureCount}\n\n`;
+            message += 'Details:\n';
+            result.results.forEach(r => {
+              const icon = r.success ? '✅' : '❌';
+              message += `${icon} ${r.assetType}: ${r.message}\n`;
+            });
+          }
+
+          alert(message);
+
+          // Reset form
+          batchTradeForm.reset();
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            const assetType = checkbox.dataset.assetType;
+            const quantityInput = document.getElementById(`quantity_${assetType}`);
+            quantityInput.disabled = true;
+            quantityInput.value = '';
+          });
+
+          // Clear holdings
+          document.querySelectorAll('.team-holding').forEach(span => {
+            span.textContent = '';
+          });
+
+          // Refresh teams data to update holdings
+          render();
+
+        } catch (error) {
+          alert(error.message || 'Failed to execute batch trade');
+        } finally {
+          const submitBtn = batchTradeForm.querySelector('button[type="submit"]');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔄 Execute Batch Trade';
+          }
         }
       });
 

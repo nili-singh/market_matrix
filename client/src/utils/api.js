@@ -195,6 +195,13 @@ class ApiClient {
         });
     }
 
+    async executeBatchTrade(batchTradeData) {
+        return this.request('/admin/trade/batch', {
+            method: 'POST',
+            body: JSON.stringify(batchTradeData),
+        });
+    }
+
     async getAssetHistory(rounds) {
         const query = rounds ? `?rounds=${rounds}` : '';
         return this.request(`/assets/history${query}`);
