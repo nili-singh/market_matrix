@@ -133,19 +133,32 @@ export default function AnimatedBarChart(container, { width = 800, height = 600,
 
     async function fetchGraphData() {
         try {
+            console.log(`[AnimatedBarChart] Fetching graph data for mode: ${mode}`);
             const response = await api.getAssetHistory();
+            console.log('[AnimatedBarChart] API Response:', response);
 
             if (!response || !response.data) {
-                console.error('Invalid API response format');
+                console.error('[AnimatedBarChart] Invalid API response format', response);
                 throw new Error('Invalid response format');
             }
 
+            console.log('[AnimatedBarChart] Response data structure:', {
+                hasAssets: !!response.data.assets,
+                hasRounds: !!response.data.rounds,
+                hasBaseValueRound: !!response.data.baseValueRound,
+                assetsKeys: response.data.assets ? Object.keys(response.data.assets) : [],
+                rounds: response.data.rounds
+            });
+
             // Handle base mode (R0 only)
             if (mode === 'base') {
+                console.log('[AnimatedBarChart] Processing BASE mode (R0)');
                 const baseRound = response.data.baseValueRound;
                 if (!baseRound) {
+                    console.error('[AnimatedBarChart] Base value round data not found!');
                     throw new Error('Base value round data not found');
                 }
+                console.log('[AnimatedBarChart] Base round data:', baseRound);
 
                 // Create graph data with only R0
                 graphData = {
@@ -174,11 +187,14 @@ export default function AnimatedBarChart(container, { width = 800, height = 600,
                 });
             } else {
                 // Handle live mode (R1+)
+                console.log('[AnimatedBarChart] Processing LIVE mode (R1+)');
                 graphData = response.data;
 
+                console.log('[AnimatedBarChart] Live mode - rounds before filter:', graphData.rounds);
                 // Filter: R1+ should only show rounds >= 1
                 if (graphData.rounds && graphData.rounds.length > 0) {
                     graphData.rounds = graphData.rounds.filter(r => r >= 1);
+                    console.log('[AnimatedBarChart] Live mode - rounds after filter:', graphData.rounds);
 
                     // Also filter asset histories to only include rounds >= 1
                     Object.keys(graphData.assets).forEach(assetType => {
@@ -201,10 +217,17 @@ export default function AnimatedBarChart(container, { width = 800, height = 600,
                 }
             });
 
+            console.log('[AnimatedBarChart] Final graph data ready:', {
+                mode,
+                rounds: graphData.rounds,
+                assetCount: Object.keys(graphData.assets).length
+            });
+
             // Update canvas size based on number of rounds
             updateCanvasSize();
 
             render();
+            console.log('[AnimatedBarChart] Render complete');
         } catch (error) {
             console.error('Error fetching graph data:', error);
             console.error('Error details:', error.message, error.stack);

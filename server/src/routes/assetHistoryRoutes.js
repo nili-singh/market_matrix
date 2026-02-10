@@ -17,7 +17,17 @@ router.get('/history', async (req, res) => {
     try {
         const GameState = (await import('../models/GameState.js')).default;
 
-        // Fetch all assets with their price history
+        // Fetch game state with immutable round snapshots
+        const gameState = await GameState.findById('GAME_STATE');
+
+        if (!gameState) {
+            return res.status(404).json({
+                success: false,
+                error: 'Game state not found'
+            });
+        }
+
+        // Fetch assets for base values and metadata only
         const assets = await Asset.find({});
 
         if (!assets || assets.length === 0) {
@@ -27,54 +37,57 @@ router.get('/history', async (req, res) => {
             });
         }
 
-        // Fetch game state to get current round
-        const gameState = await GameState.findById('GAME_STATE');
-        const currentRound = gameState ? gameState.currentRound : 0;
-
         // Build graph data structure
         const graphData = {
             assets: {},
             rounds: [],
-            currentRound: currentRound,
+            currentRound: gameState.currentRound,
             baseValueRound: null // For R0 base values
         };
 
-        // Collect all unique rounds from all assets
-        const roundsSet = new Set();
-
-        // Process each asset
+        // Initialize asset metadata (names, colors, base values)
         assets.forEach(asset => {
-            const assetType = asset.assetType;
-
-            // Initialize asset in graph data
-            graphData.assets[assetType] = {
+            graphData.assets[asset.assetType] = {
                 name: asset.name,
                 currentValue: asset.currentValue,
                 baseValue: asset.baseValue,
-                color: getAssetColor(assetType),
-                history: []
+                color: getAssetColor(asset.assetType),
+                history: [] // Will be populated from IMMUTABLE snapshots
             };
+        });
 
-            // Add price history
-            if (asset.priceHistory && asset.priceHistory.length > 0) {
-                asset.priceHistory.forEach(point => {
-                    graphData.assets[assetType].history.push({
-                        round: point.round,
-                        value: point.value,
-                        timestamp: point.timestamp,
-                        event: point.event
-                    });
+        // CRITICAL: Read historical data from IMMUTABLE snapshots ONLY
+        // Filter snapshots to only include rounds <= currentRound (no future rounds)
+        const validSnapshots = (gameState.roundSnapshots || [])
+            .filter(snap => snap.round <= gameState.currentRound)
+            .sort((a, b) => a.round - b.round);
 
-                    // Collect unique rounds
-                    roundsSet.add(point.round);
+        // Populate history from immutable snapshots
+        validSnapshots.forEach(snapshot => {
+            // Add round to rounds array
+            if (!graphData.rounds.includes(snapshot.round)) {
+                graphData.rounds.push(snapshot.round);
+            }
+
+            // Populate asset history from snapshot
+            if (snapshot.assetPrices) {
+                Object.entries(snapshot.assetPrices).forEach(([assetType, price]) => {
+                    if (graphData.assets[assetType]) {
+                        graphData.assets[assetType].history.push({
+                            round: snapshot.round,
+                            value: price,
+                            timestamp: snapshot.timestamp,
+                            event: 'snapshot' // Data from immutable snapshot
+                        });
+                    }
                 });
             }
         });
 
-        // Sort rounds
-        graphData.rounds = Array.from(roundsSet).sort((a, b) => a - b);
+        // Ensure rounds are sorted
+        graphData.rounds.sort((a, b) => a - b);
 
-        // Create base value round (R0) data
+        // Create base value round (R0) data from base values (constant)
         graphData.baseValueRound = {
             round: 0,
             timestamp: new Date(),
