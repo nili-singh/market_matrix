@@ -8,94 +8,93 @@ const router = express.Router();
  * Get historical asset data for graph visualization
  * Public endpoint - no authentication required for player view
  */
+/**
+ * GET /api/assets/history
+ * Get historical asset data for graph visualization from immutable round snapshots
+ * Public endpoint - no authentication required for player view
+ */
 router.get('/history', async (req, res) => {
     try {
-        const { rounds } = req.query;
-        const limit = rounds ? parseInt(rounds) : 50; // Default to last 50 rounds
+        const GameState = (await import('../models/GameState.js')).default;
 
         // Fetch all assets with their price history
-        const assets = await Asset.find({}).select('assetType name currentValue baseValue priceHistory');
+        const assets = await Asset.find({});
 
-        // Transform data for graph consumption
+        if (!assets || assets.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'No assets found'
+            });
+        }
+
+        // Fetch game state to get current round
+        const gameState = await GameState.findById('GAME_STATE');
+        const currentRound = gameState ? gameState.currentRound : 0;
+
+        // Build graph data structure
         const graphData = {
             assets: {},
             rounds: [],
+            currentRound: currentRound,
+            baseValueRound: null // For R0 base values
         };
 
-        // Initialize asset data structure
+        // Collect all unique rounds from all assets
+        const roundsSet = new Set();
+
+        // Process each asset
         assets.forEach(asset => {
-            graphData.assets[asset.assetType] = {
+            const assetType = asset.assetType;
+
+            // Initialize asset in graph data
+            graphData.assets[assetType] = {
                 name: asset.name,
                 currentValue: asset.currentValue,
                 baseValue: asset.baseValue,
-                color: getAssetColor(asset.assetType),
-                history: [],
+                color: getAssetColor(assetType),
+                history: []
             };
+
+            // Add price history
+            if (asset.priceHistory && asset.priceHistory.length > 0) {
+                asset.priceHistory.forEach(point => {
+                    graphData.assets[assetType].history.push({
+                        round: point.round,
+                        value: point.value,
+                        timestamp: point.timestamp,
+                        event: point.event
+                    });
+
+                    // Collect unique rounds
+                    roundsSet.add(point.round);
+                });
+            }
         });
 
-        // Get unique rounds from all assets
-        const roundSet = new Set();
+        // Sort rounds
+        graphData.rounds = Array.from(roundsSet).sort((a, b) => a - b);
+
+        // Create base value round (R0) data
+        graphData.baseValueRound = {
+            round: 0,
+            timestamp: new Date(),
+            values: {}
+        };
+
         assets.forEach(asset => {
-            asset.priceHistory.forEach(point => {
-                if (point.round !== undefined) {
-                    roundSet.add(point.round);
-                }
-            });
-        });
-
-        const sortedRounds = Array.from(roundSet).sort((a, b) => a - b).slice(-limit);
-        graphData.rounds = sortedRounds;
-
-        // Populate history for each asset by round
-        assets.forEach(asset => {
-            const assetHistory = graphData.assets[asset.assetType].history;
-
-            sortedRounds.forEach(round => {
-                // Find the price point for this round
-                const pricePoint = asset.priceHistory.find(p => p.round === round);
-
-                if (pricePoint) {
-                    assetHistory.push({
-                        round,
-                        value: pricePoint.value,
-                        timestamp: pricePoint.timestamp,
-                        event: pricePoint.event,
-                    });
-                } else {
-                    // If no data for this round, use previous value or base value
-                    const previousValue = assetHistory.length > 0
-                        ? assetHistory[assetHistory.length - 1].value
-                        : asset.baseValue;
-
-                    assetHistory.push({
-                        round,
-                        value: previousValue,
-                        timestamp: null,
-                        event: 'no_change',
-                    });
-                }
-            });
+            graphData.baseValueRound.values[asset.assetType] = asset.baseValue;
         });
 
         res.json({
             success: true,
-            data: {
-                ...graphData,
-                // Add R0 (base values) data
-                baseValueRound: {
-                    round: 0,
-                    values: assets.reduce((acc, asset) => {
-                        acc[asset.assetType] = asset.baseValue;
-                        return acc;
-                    }, {}),
-                },
-            },
+            data: graphData,
         });
     } catch (error) {
         console.error('Get asset history error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to fetch asset history'
+            error: 'Failed to fetch asset history',
+            details: error.message
         });
     }
 });

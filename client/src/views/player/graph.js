@@ -25,10 +25,10 @@ export default function PlayerGraph(container) {
                             </svg>
                             Back to Home
                         </button>
-                        <img src="/tycoons-logo.png" alt="TYCOONS" style="height: 50px; margin-left: 1.5rem; margin-right: 1rem;" />
                         <h1 class="graph-title">Market Matrix - Asset Values</h1>
                     </div>
                     <div class="live-indicator">
+                        <img src="/assets/logo.jpeg" alt="TYCOONS" style="height: 40px; margin-right: 1rem;" />
                         <span class="pulse-dot"></span>
                         <span>LIVE</span>
                     </div>

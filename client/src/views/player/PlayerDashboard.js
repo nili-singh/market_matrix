@@ -84,15 +84,9 @@ export default async function PlayerDashboard() {
                         <h1 class="dashboard-title">${teamName}</h1>
                         <p class="text-muted">${dashboardData.teamId}</p>
                     </div>
-                    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
-                </div>
-
-                <!-- Rank Card -->
-                <div class="rank-card">
-                    <div class="rank-label">Current Rank</div>
-                    <div class="rank-value">
-                        <span class="rank-number">#${dashboardData.rank}</span>
-                        <span class="rank-total">/ ${dashboardData.totalTeams}</span>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="homeBtn">Back to Home</button>
+                        <button class="btn btn-secondary" id="logoutBtn">Logout</button>
                     </div>
                 </div>
 
@@ -129,6 +123,9 @@ export default async function PlayerDashboard() {
         addDashboardStyles();
 
         // Event listeners
+        document.getElementById('homeBtn').addEventListener('click', () => {
+            window.location.href = '/';
+        });
         document.getElementById('logoutBtn').addEventListener('click', logout);
     }
 
@@ -136,16 +133,26 @@ export default async function PlayerDashboard() {
         const totalValue = quantity * price;
         const assetIcon = getAssetIcon(assetType);
 
+        // Show price only if it's not zero
+        const quantityText = price > 0
+            ? `${quantity} units @ ₹${formatNumber(price)}`
+            : `${quantity} units`;
+
+        // Show total value only if it's not zero
+        const valueDisplay = totalValue > 0
+            ? `₹${formatNumber(totalValue)}`
+            : '';
+
         return `
             <div class="asset-item">
                 <div class="asset-info">
                     <div class="asset-icon">${assetIcon}</div>
                     <div>
                         <div class="asset-name">${assetName}</div>
-                        <div class="asset-quantity">${quantity} units @ ₹${formatNumber(price)}</div>
+                        <div class="asset-quantity">${quantityText}</div>
                     </div>
                 </div>
-                <div class="asset-value">₹${formatNumber(totalValue)}</div>
+                <div class="asset-value">${valueDisplay}</div>
             </div>
         `;
     }
@@ -214,6 +221,12 @@ function addDashboardStyles() {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
 
         .dashboard-title {

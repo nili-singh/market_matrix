@@ -16,9 +16,15 @@ const checkAssets = async () => {
             console.log(`  Name: ${asset.name}`);
             console.log(`  Base Value: ${asset.baseValue}`);
             console.log(`  Current Value: ${asset.currentValue}`);
-            console.log(`  Price History Length: ${asset.priceHistory?.length || 0}`);
+            console.log(`  Cumulative Buy Volume: ${asset.cumulativeBuyVolume || 0}`);
+            console.log(`  Cumulative Sell Volume: ${asset.cumulativeSellVolume || 0}`);
+            console.log(`  Price History:`);
             if (asset.priceHistory && asset.priceHistory.length > 0) {
-                console.log(`  Latest: Round ${asset.priceHistory[asset.priceHistory.length - 1].round}, Value: ${asset.priceHistory[asset.priceHistory.length - 1].value}`);
+                asset.priceHistory.forEach((point, index) => {
+                    console.log(`    ${index + 1}. Round ${point.round} - ${point.event}: ${point.value}`);
+                });
+            } else {
+                console.log(`    (no history)`);
             }
             console.log('');
         });

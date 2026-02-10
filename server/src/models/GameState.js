@@ -64,6 +64,15 @@ const gameStateSchema = new mongoose.Schema({
     roundSnapshots: [{
         round: Number,
         timestamp: Date,
+        // Asset market prices at this round (immutable historical data)
+        assetPrices: {
+            CRYPTO: Number,
+            STOCK: Number,
+            GOLD: Number,
+            EURO_BOND: Number,
+            TREASURY_BILL: Number,
+        },
+        // Team asset holdings at this round (for rollback)
         assetValues: {
             type: Map,
             of: {

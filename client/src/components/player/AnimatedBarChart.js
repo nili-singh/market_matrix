@@ -1,19 +1,19 @@
 import api from '../../utils/api.js';
 import socket from '../../utils/socket.js';
 
+// Fixed bar dimensions for consistent sizing
+const FIXED_BAR_WIDTH = 40;  // Fixed width per bar
+const BAR_GAP = 8;            // Gap between bars
+const MIN_GROUP_WIDTH = 280;  // Minimum pixels per round group
+
 /**
  * AnimatedBarChart Component
  * Canvas-based animated vertical bar chart for asset visualization
  */
-export default function AnimatedBarChart(container, options = {}) {
-    const {
-        width = container.clientWidth || 1200,
-        height = container.clientHeight || 600,
-        padding = { top: 60, right: 40, bottom: 80, left: 80 },
-        animationDuration = 800, // ms
-        barSpacing = 0.3, // 30% spacing between bars
-        mode = 'live', // 'base' for R0, 'live' for R1+
-    } = options;
+export default function AnimatedBarChart(container, { width = 800, height = 600, mode = 'live' } = {}) {
+    const padding = { top: 60, right: 40, bottom: 80, left: 80 };
+    const animationDuration = 800; // ms
+    const barSpacing = 0.3; // 30% spacing between bars
 
     let canvas, ctx;
     let actualWidth, actualHeight; // Track actual canvas dimensions
@@ -26,11 +26,11 @@ export default function AnimatedBarChart(container, options = {}) {
 
     // Asset colors - vibrant palette for dark theme
     const assetColors = {
-        'GOLD': '#FFD700',           // Bright Gold/Yellow
-        'STOCK': '#8B9556',          // Olive Green
-        'CRYPTO': '#3B82F6',         // Electric Blue
-        'EURO_BOND': '#B85450',      // Brick Red
         'TREASURY_BILL': '#FFB6D9',  // Baby Pink
+        'CRYPTO': '#3B82F6',         // Electric Blue  
+        'EURO_BOND': '#B85450',      // Brick Red
+        'STOCK': '#8B9556',          // Olive Green
+        'GOLD': '#FFD700',           // Bright Gold/Yellow
     };
 
     // Bar spacing for better separation
@@ -47,10 +47,10 @@ export default function AnimatedBarChart(container, options = {}) {
         const tooltipId = `tooltip_${Math.random().toString(36).substr(2, 9)}`;
 
         container.innerHTML = `
-            <div style="position: relative; width: 100%; height: 100%;">
-                <canvas id="${uniqueId}" style="display: block; width: 100%; height: 100%;"></canvas>
+            <div style="position: relative; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden;">
+                <canvas id="${uniqueId}" style="display: block; height: 100%;"></canvas>
                 <div id="${tooltipId}" style="
-                    position: absolute;
+                    position: fixed;
                     display: none;
                     background: rgba(0, 0, 0, 0.9);
                     color: white;
@@ -58,7 +58,7 @@ export default function AnimatedBarChart(container, options = {}) {
                     border-radius: 8px;
                     font-size: 14px;
                     pointer-events: none;
-                    z-index: 1000;
+                    z-index: 9999;
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
                 "></div>
             </div>
@@ -70,16 +70,11 @@ export default function AnimatedBarChart(container, options = {}) {
         // Store tooltip ID for later use
         canvas.tooltipId = tooltipId;
 
-        // Set canvas size with device pixel ratio for sharp rendering
-        const dpr = window.devicePixelRatio || 1;
-        actualWidth = containerWidth;
+        // Set initial canvas height
         actualHeight = containerHeight;
 
-        canvas.width = actualWidth * dpr;
-        canvas.height = actualHeight * dpr;
-        canvas.style.width = `${actualWidth}px`;
-        canvas.style.height = `${actualHeight}px`;
-        ctx.scale(dpr, dpr);
+        // Initial canvas setup - width will be updated after data loads
+        updateCanvasSize();
 
         // Add mouse move listener for tooltips
         canvas.addEventListener('mousemove', handleMouseMove);
@@ -94,17 +89,54 @@ export default function AnimatedBarChart(container, options = {}) {
             socket.on('graph:update', () => {
                 fetchGraphData();
             });
+            socket.on('round:change', () => {
+                console.log('Round changed - refreshing graph');
+                fetchGraphData();
+            });
         }
+    }
+
+    // Dynamic canvas sizing based on number of rounds
+    function updateCanvasSize() {
+        const containerWidth = container.clientWidth || width;
+
+        if (!graphData.rounds || graphData.rounds.length === 0) {
+            // Use container width for empty/base state
+            actualWidth = containerWidth;
+        } else {
+            // Calculate based on rounds - each round gets MIN_GROUP_WIDTH
+            const roundCount = graphData.rounds.length;
+            const assetTypes = Object.keys(graphData.assets);
+            const assetsPerRound = assetTypes.length || 5;
+
+            // Calculate group width: enough space for all bars + gaps
+            const groupWidth = Math.max(
+                MIN_GROUP_WIDTH,
+                (FIXED_BAR_WIDTH + BAR_GAP) * assetsPerRound + 80
+            );
+
+            // Total width = (groups * groupWidth) + padding
+            const calculatedWidth = groupWidth * roundCount + padding.left + padding.right;
+
+            // Use larger of container or calculated width (enables scrolling)
+            actualWidth = Math.max(containerWidth, calculatedWidth);
+        }
+
+        // Update canvas with device pixel ratio for sharp rendering
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = actualWidth * dpr;
+        canvas.height = actualHeight * dpr;
+        canvas.style.width = `${actualWidth}px`;
+        canvas.style.height = `${actualHeight}px`;
+        ctx.scale(dpr, dpr);
     }
 
     async function fetchGraphData() {
         try {
-            console.log(`Fetching graph data for mode: ${mode}...`);
             const response = await api.getAssetHistory();
-            console.log('API Response:', response);
-            console.log('Graph Data:', response.data);
 
             if (!response || !response.data) {
+                console.error('Invalid API response format');
                 throw new Error('Invalid response format');
             }
 
@@ -121,64 +153,57 @@ export default function AnimatedBarChart(container, options = {}) {
                     assets: {},
                 };
 
-                // Build assets structure from base values
-                Object.keys(baseRound.values).forEach(assetType => {
-                    const assetInfo = response.data.assets[assetType];
-                    graphData.assets[assetType] = {
-                        name: assetInfo.name,
-                        currentValue: baseRound.values[assetType],
-                        baseValue: baseRound.values[assetType],
-                        color: assetInfo.color,
-                        history: [{
-                            round: 0,
-                            value: baseRound.values[assetType],
-                            timestamp: new Date(),
-                            event: 'base'
-                        }]
-                    };
+                // Build assets structure from base values in specific order
+                const orderedAssets = ['TREASURY_BILL', 'CRYPTO', 'EURO_BOND', 'STOCK', 'GOLD'];
+                orderedAssets.forEach(assetType => {
+                    if (baseRound.values[assetType] !== undefined) {
+                        const assetInfo = response.data.assets[assetType];
+                        graphData.assets[assetType] = {
+                            name: assetInfo.name,
+                            currentValue: baseRound.values[assetType],
+                            baseValue: baseRound.values[assetType],
+                            color: assetColors[assetType],
+                            history: [{
+                                round: 0,
+                                value: baseRound.values[assetType],
+                                timestamp: new Date(),
+                                event: 'base'
+                            }]
+                        };
+                    }
                 });
             } else {
                 // Handle live mode (R1+)
-                console.log('===== R1+ GRAPH DEBUG =====');
-                console.log('Raw API Response:', JSON.stringify(response.data, null, 2));
-
                 graphData = response.data;
 
-                console.log('graphData.rounds BEFORE filtering:', graphData.rounds);
-                console.log('graphData.assets BEFORE filtering:', Object.keys(graphData.assets));
-
                 // Filter: R1+ should only show rounds >= 1
-                // Keep all rounds from 1 onwards
                 if (graphData.rounds && graphData.rounds.length > 0) {
-                    // Filter to only include rounds >= 1
                     graphData.rounds = graphData.rounds.filter(r => r >= 1);
 
                     // Also filter asset histories to only include rounds >= 1
                     Object.keys(graphData.assets).forEach(assetType => {
                         if (graphData.assets[assetType].history) {
-                            console.log(`${assetType} history BEFORE filter:`, graphData.assets[assetType].history);
                             graphData.assets[assetType].history =
                                 graphData.assets[assetType].history.filter(h => h.round >= 1);
-                            console.log(`${assetType} history AFTER filter:`, graphData.assets[assetType].history);
                         }
+
+                        // IMPORTANT: Override API color with local assetColors for consistency
+                        graphData.assets[assetType].color = assetColors[assetType];
                     });
                 }
-
-                // If no rounds >= 1, show placeholder
-                if (!graphData.rounds || graphData.rounds.length === 0) {
-                    console.log('No rounds >= 1 found. Game might not have started yet.');
-                    console.log('Full API response:', response.data);
-                    console.log('Available rounds in response:', response.data.rounds);
-                }
-
-                console.log('Live mode - Filtered rounds:', graphData.rounds);
-                console.log('Live mode - Assets:', Object.keys(graphData.assets));
-                console.log('===== END R1+ DEBUG =====');
             }
 
-            console.log(`Graph data set successfully for ${mode} mode`);
-            console.log(`Final rounds to display:`, graphData.rounds);
-            console.log(`Final assets:`, Object.keys(graphData.assets || {}));
+            // Update current values for animation
+            Object.keys(graphData.assets).forEach(assetType => {
+                const assetData = response.data.assets[assetType];
+                if (assetData) {
+                    graphData.assets[assetType].currentValue = assetData.currentValue;
+                }
+            });
+
+            // Update canvas size based on number of rounds
+            updateCanvasSize();
+
             render();
         } catch (error) {
             console.error('Error fetching graph data:', error);
@@ -247,13 +272,6 @@ export default function AnimatedBarChart(container, options = {}) {
     }
 
     function render() {
-        console.log('===== RENDER CALLED =====');
-        console.log('graphData.rounds:', graphData.rounds);
-        console.log('graphData.assets keys:', Object.keys(graphData.assets || {}));
-        console.log('ctx exists:', !!ctx);
-        console.log('actualWidth:', actualWidth);
-        console.log('actualHeight:', actualHeight);
-
         if (!ctx || !actualWidth || !actualHeight) return;
 
         // Clear canvas
@@ -271,7 +289,6 @@ export default function AnimatedBarChart(container, options = {}) {
         ctx.fillRect(0, 0, actualWidth, actualHeight);
 
         if (!graphData.rounds || graphData.rounds.length === 0) {
-            console.log('SHOWING PLACEHOLDER - rounds empty');
             renderPlaceholder();
             return;
         }
@@ -286,35 +303,29 @@ export default function AnimatedBarChart(container, options = {}) {
         const yScale = chartHeight / (maxValue - minValue);
 
         const roundCount = graphData.rounds.length;
-        const groupWidth = chartWidth / roundCount;
+        const assetsPerRound = assetTypes.length;
 
-        // Calculate bar width with spacing - reduced to 50% of original
-        const totalBarsPerRound = assetTypes.length;
-        const totalGapSpace = barGap * (totalBarsPerRound - 1);
-        const availableWidth = (groupWidth * (1 - barSpacing)) - totalGapSpace;
-        const barWidth = (availableWidth / totalBarsPerRound) * 0.5; // 50% width
+        // Calculate group width based on fixed bar width
+        const groupWidth = Math.max(
+            MIN_GROUP_WIDTH,
+            (FIXED_BAR_WIDTH + BAR_GAP) * assetsPerRound + 80
+        );
+
+        // Use fixed bar width for consistent sizing
+        const barWidth = FIXED_BAR_WIDTH;
 
         // Draw axes
         drawAxes(chartWidth, chartHeight, maxValue, minValue, yScale);
 
         // Draw bars for each round
-        console.log('Starting to draw bars...');
-        console.log('roundCount:', roundCount);
-        console.log('assetTypes:', assetTypes);
-
         graphData.rounds.forEach((round, roundIndex) => {
-            console.log(`\n--- Drawing round ${round} (index ${roundIndex}) ---`);
             const groupX = padding.left + roundIndex * groupWidth;
 
             assetTypes.forEach((assetType, assetIndex) => {
                 const history = graphData.assets[assetType].history;
-                console.log(`  ${assetType} history:`, history);
-
                 const dataPoint = history.find(h => h.round === round);
-                console.log(`  ${assetType} dataPoint for round ${round}:`, dataPoint);
 
                 if (dataPoint) {
-                    console.log(`  ✓ Drawing bar for ${assetType}`);
                     const value = currentAnimations[assetType] !== undefined
                         ? currentAnimations[assetType]
                         : dataPoint.value;
@@ -322,13 +333,10 @@ export default function AnimatedBarChart(container, options = {}) {
                     // Ensure value is within range
                     const clampedValue = Math.max(100, Math.min(800, value));
                     const barHeight = (clampedValue - 100) * yScale; // Adjust for min value of 100
-                    // Center bars within their allocated space
-                    const barOffset = (availableWidth / totalBarsPerRound - barWidth) / 2;
-                    const barX = groupX + (barWidth * assetIndex) + (barGap * assetIndex) + (groupWidth * barSpacing / 2) + barOffset;
+
+                    // Simplified bar positioning with fixed width
+                    const barX = groupX + (barWidth + BAR_GAP) * assetIndex + 40;
                     const barY = padding.top + chartHeight - barHeight;
-
-
-                    console.log(`    Bar coords: x=${barX.toFixed(1)}, y=${barY.toFixed(1)}, width=${barWidth.toFixed(1)}, height=${barHeight.toFixed(1)}, value=${clampedValue}`);
 
                     // Draw bar with gradient
                     const color = graphData.assets[assetType].color;
@@ -338,7 +346,6 @@ export default function AnimatedBarChart(container, options = {}) {
 
                     ctx.fillStyle = barGradient;
                     ctx.fillRect(barX, barY, barWidth, barHeight);
-                    console.log(`    ✅ fillRect called with color ${color}`);
 
                     // Store bar data for tooltip
                     canvas.barData.push({
@@ -354,8 +361,10 @@ export default function AnimatedBarChart(container, options = {}) {
             });
         });
 
-        // Draw legend
-        drawLegend(assetTypes);
+        // Draw legend only for base mode (R0)
+        if (mode === 'base') {
+            drawLegend(assetTypes);
+        }
     }
 
     function drawAxes(chartWidth, chartHeight, maxValue, minValue, yScale) {
@@ -549,7 +558,9 @@ export default function AnimatedBarChart(container, options = {}) {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        if (!canvas.barData) return;
+        if (!canvas.barData || canvas.barData.length === 0) {
+            return;
+        }
 
         // Find bar under cursor
         const bar = canvas.barData.find(b =>
@@ -566,6 +577,11 @@ export default function AnimatedBarChart(container, options = {}) {
 
     function showTooltip(x, y, bar) {
         const tooltip = document.getElementById(canvas.tooltipId);
+
+        if (!tooltip || !graphData.assets || !graphData.assets[bar.assetType]) {
+            return;
+        }
+
         const assetName = graphData.assets[bar.assetType].name;
 
         tooltip.innerHTML = `
@@ -622,6 +638,7 @@ export default function AnimatedBarChart(container, options = {}) {
         }
         socket.off('asset:update', handleAssetUpdate);
         socket.off('graph:update');
+        socket.off('round:change');
         canvas.removeEventListener('mousemove', handleMouseMove);
         canvas.removeEventListener('mouseleave', hideTooltip);
     }

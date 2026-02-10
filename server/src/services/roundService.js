@@ -69,6 +69,15 @@ class RoundService {
                 throw new Error('Game state not found');
             }
 
+            // Get current asset prices from Asset model
+            const Asset = (await import('../models/Asset.js')).default;
+            const assets = await Asset.find({});
+
+            const assetPrices = {};
+            assets.forEach(asset => {
+                assetPrices[asset.assetType] = asset.currentValue;
+            });
+
             // Get all teams with their current asset values
             const teams = await Team.find({});
             const assetValues = {};
@@ -86,11 +95,11 @@ class RoundService {
             // Calculate current leaderboard
             const leaderboard = teams.map(team => {
                 const totalValue =
-                    (team.assets.CRYPTO || 0) * (team.assetPrices?.CRYPTO || 0) +
-                    (team.assets.STOCK || 0) * (team.assetPrices?.STOCK || 0) +
-                    (team.assets.GOLD || 0) * (team.assetPrices?.GOLD || 0) +
-                    (team.assets.EURO_BOND || 0) * (team.assetPrices?.EURO_BOND || 0) +
-                    (team.assets.TREASURY_BILL || 0) * (team.assetPrices?.TREASURY_BILL || 0) +
+                    (team.assets.CRYPTO || 0) * (assetPrices.CRYPTO || 0) +
+                    (team.assets.STOCK || 0) * (assetPrices.STOCK || 0) +
+                    (team.assets.GOLD || 0) * (assetPrices.GOLD || 0) +
+                    (team.assets.EURO_BOND || 0) * (assetPrices.EURO_BOND || 0) +
+                    (team.assets.TREASURY_BILL || 0) * (assetPrices.TREASURY_BILL || 0) +
                     (team.balance || 0);
 
                 return {
@@ -100,17 +109,26 @@ class RoundService {
                 };
             }).sort((a, b) => b.totalValue - a.totalValue);
 
-            // Create snapshot
+            // Create snapshot with asset prices
             const snapshot = {
                 round: gameState.currentRound,
                 timestamp: new Date(),
-                assetValues,
+                assetPrices, // Immutable asset market prices
+                assetValues, // Team holdings
                 leaderboard,
                 drawnCardIds: [...(gameState.drawnCards || [])],
             };
 
-            // Keep only the last snapshot (one-step rollback)
-            gameState.roundSnapshots = [snapshot];
+            // Add snapshot to history (keep all for immutable round data)
+            // Remove any existing snapshot for this round first (for idempotency)
+            gameState.roundSnapshots = gameState.roundSnapshots.filter(
+                s => s.round !== gameState.currentRound
+            );
+            gameState.roundSnapshots.push(snapshot);
+
+            // Sort by round number
+            gameState.roundSnapshots.sort((a, b) => a.round - b.round);
+
             await gameState.save();
 
             return snapshot;
@@ -137,6 +155,16 @@ class RoundService {
 
         // Increment round
         gameState.currentRound += 1;
+
+        // Save price history snapshot for all assets for the new round
+        const Asset = (await import('../models/Asset.js')).default;
+        const assets = await Asset.find({});
+
+        for (const asset of assets) {
+            // Add price point for the new round with current value
+            asset.addPricePoint(asset.currentValue, gameState.currentRound, 'new_round');
+            await asset.save();
+        }
 
         // Shuffle deck before even rounds
         if (gameState.currentRound % 2 === 0) {
@@ -180,25 +208,38 @@ class RoundService {
             throw new Error('Cannot rollback from round 1');
         }
 
-        // Check if snapshot exists
-        if (!gameState.roundSnapshots || gameState.roundSnapshots.length === 0) {
-            throw new Error('No snapshot available for rollback');
+        // Find the snapshot for the previous round
+        const previousRoundNumber = gameState.currentRound - 1;
+        const snapshot = gameState.roundSnapshots.find(s => s.round === previousRoundNumber);
+
+        if (!snapshot) {
+            throw new Error(`No snapshot found for round ${previousRoundNumber}`);
         }
 
-        const snapshot = gameState.roundSnapshots[0];
+        // Restore asset prices from snapshot
+        const Asset = (await import('../models/Asset.js')).default;
+        if (snapshot.assetPrices) {
+            for (const [assetType, price] of Object.entries(snapshot.assetPrices)) {
+                const asset = await Asset.findOne({ assetType });
+                if (asset) {
+                    asset.currentValue = price;
+                    await asset.save();
+                }
+            }
+        }
 
-        // Restore asset values for all teams
+        // Restore asset holdings for all teams
         const teams = await Team.find({});
 
         for (const team of teams) {
-            const savedAssets = snapshot.assetValues[team._id.toString()];
+            const savedAssets = snapshot.assetValues?.[team._id.toString()];
             if (savedAssets) {
                 team.assets = {
-                    CRYPTO: savedAssets.CRYPTO,
-                    STOCK: savedAssets.STOCK,
-                    GOLD: savedAssets.GOLD,
-                    EURO_BOND: savedAssets.EURO_BOND,
-                    TREASURY_BILL: savedAssets.TREASURY_BILL,
+                    CRYPTO: savedAssets.CRYPTO || 0,
+                    STOCK: savedAssets.STOCK || 0,
+                    GOLD: savedAssets.GOLD || 0,
+                    EURO_BOND: savedAssets.EURO_BOND || 0,
+                    TREASURY_BILL: savedAssets.TREASURY_BILL || 0,
                 };
                 await team.save();
             }
@@ -222,11 +263,13 @@ class RoundService {
         }
 
         // Decrement round
-        gameState.currentRound = snapshot.round;
+        gameState.currentRound = previousRoundNumber;
         gameState.drawnCards = snapshotDrawnCards;
 
-        // Clear the snapshot after using it
-        gameState.roundSnapshots = [];
+        // Remove snapshot for the round we're rolling back FROM (keep historical snapshots intact)
+        gameState.roundSnapshots = gameState.roundSnapshots.filter(
+            s => s.round < gameState.currentRound
+        );
 
         await gameState.save();
 
