@@ -80,6 +80,19 @@ class ApiClient {
         return data;
     }
 
+    async teamLogin(teamId, password) {
+        const data = await this.request('/api/team-auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ teamId, password }),
+        });
+
+        if (data.token) {
+            localStorage.setItem('team_token', data.token);
+        }
+
+        return data;
+    }
+
     async verifyToken() {
         return this.request('/api/auth/verify', {
             method: 'POST',

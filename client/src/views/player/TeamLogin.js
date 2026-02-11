@@ -82,33 +82,16 @@ export default function TeamLogin() {
             loginBtn.textContent = 'Logging in...';
             hideError();
 
-            // Call team login API - use environment-aware URL
-            const API_BASE_URL = window.location.hostname === 'localhost'
-                ? 'http://localhost:3000/api'
-                : 'https://market-matrix-t2nc.onrender.com/api';
+            const data = await api.teamLogin(teamId, password);
 
-            const response = await fetch(`${API_BASE_URL}/team-auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ teamId, password }),
-            });
+            if (data.success) {
+                // Store additional team info
+                localStorage.setItem('team_id', data.team.teamId);
+                localStorage.setItem('team_name', data.team.teamName);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Login failed');
+                // Redirect to player dashboard
+                window.location.href = '/player-dashboard';
             }
-
-            // Store token in localStorage
-            localStorage.setItem('team_token', data.token);
-            localStorage.setItem('team_id', data.team.teamId);
-            localStorage.setItem('team_name', data.team.teamName);
-
-            // Redirect to player dashboard
-            window.location.href = '/player-dashboard';
-
         } catch (error) {
             console.error('Login error:', error);
             showError(error.message || 'Invalid credentials. Please try again.');
