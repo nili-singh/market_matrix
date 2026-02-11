@@ -321,6 +321,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // Connect to WebSocket
   socket.connect();
 
+  // Setup global socket listeners for app-wide events
+  socket.on('game:reset', () => {
+    console.log('Game reset event received - reloading application');
+    // Show notification to user before reload
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: white;
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      z-index: 99999;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    `;
+    notification.innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 0.5rem;">Game Reset</div>
+      <div style="font-size: 1rem; color: #cbd5e1;">Reloading application...</div>
+    `;
+    document.body.appendChild(notification);
+
+    // Reload after short delay for user to see message
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  });
+
   // Route to current path
   router();
 });

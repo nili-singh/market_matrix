@@ -166,6 +166,18 @@ export default function AssetGraph(container) {
         updateChart();
     });
 
+    // Listen for card drawn events (asset values change)
+    socket.on('card:drawn', (data) => {
+        console.log('Card drawn - updating asset graph', data);
+        updateChart();
+    });
+
+    // Listen for graph update events
+    socket.on('graph:update', (data) => {
+        console.log('Graph update - refreshing asset graph', data);
+        updateChart();
+    });
+
     // Initialize chart
     initChart();
 

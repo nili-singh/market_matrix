@@ -87,10 +87,23 @@ export default function AnimatedBarChart(container, { width = 800, height = 600,
         if (mode === 'live') {
             socket.on('asset:update', handleAssetUpdate);
             socket.on('graph:update', () => {
+                console.log('Graph update event - refreshing data');
                 fetchGraphData();
             });
             socket.on('round:change', () => {
                 console.log('Round changed - refreshing graph');
+                fetchGraphData();
+            });
+            socket.on('card:drawn', (data) => {
+                console.log('Card drawn - updating graph', data);
+                fetchGraphData();
+            });
+            socket.on('round:next', (data) => {
+                console.log('Next round - updating graph', data);
+                fetchGraphData();
+            });
+            socket.on('round:previous', (data) => {
+                console.log('Previous round - updating graph', data);
                 fetchGraphData();
             });
         }
@@ -662,6 +675,9 @@ export default function AnimatedBarChart(container, { width = 800, height = 600,
         socket.off('asset:update', handleAssetUpdate);
         socket.off('graph:update');
         socket.off('round:change');
+        socket.off('card:drawn');
+        socket.off('round:next');
+        socket.off('round:previous');
         canvas.removeEventListener('mousemove', handleMouseMove);
         canvas.removeEventListener('mouseleave', hideTooltip);
     }

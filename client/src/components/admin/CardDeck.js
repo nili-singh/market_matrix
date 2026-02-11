@@ -425,6 +425,15 @@ export default function CardDeck(container, { selectedTeamId = null, onCardDrawn
         render();
     });
 
+    // Listen for game reset
+    socket.on('game:reset', () => {
+        console.log('Game reset - clearing deck state');
+        drawnFiveCards = [];
+        selectedCard = null;
+        isLocked = false;
+        render();
+    });
+
     // Initial render
     render();
 
@@ -433,6 +442,7 @@ export default function CardDeck(container, { selectedTeamId = null, onCardDrawn
         cleanup: () => {
             socket.off('deck:shuffle-start');
             socket.off('deck:state');
+            socket.off('game:reset');
         },
         updateTeam: updateTeam
     };

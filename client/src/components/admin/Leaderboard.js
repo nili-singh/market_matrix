@@ -87,5 +87,15 @@ export default function Leaderboard(container) {
     render();
   });
 
+  socket.on('team:deleted', (data) => {
+    console.log('Team deleted - refreshing leaderboard', data);
+    render();
+  });
+
+  socket.on('card:drawn', (data) => {
+    console.log('Card drawn - refreshing leaderboard', data);
+    render();
+  });
+
   render();
 }
