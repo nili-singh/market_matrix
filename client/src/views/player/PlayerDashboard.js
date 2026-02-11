@@ -1,3 +1,4 @@
+import api from '../../utils/api.js';
 import socket from '../../utils/socket.js';
 
 /**
