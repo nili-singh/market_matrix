@@ -23,26 +23,62 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// FIXED: Proper CORS origins handling
+const getAllowedOrigins = () => {
+    const envOrigins = process.env.CORS_ORIGINS;
+    
+    if (envOrigins) {
+        // If it contains comma, split it. Otherwise, use as single origin
+        return envOrigins.includes(',') ? envOrigins.split(',').map(origin => origin.trim()) : [envOrigins.trim()];
+    }
+    
+    // Default origins for development
+    return ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+};
+
+const allowedOrigins = getAllowedOrigins();
+
+console.log('🔐 Allowed CORS Origins:', allowedOrigins);
+
+// Socket.IO CORS configuration
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+        origin: allowedOrigins,
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true,
     },
 });
 
-// Middleware
+// CRITICAL: Apply CORS middleware FIRST, before any routes
 app.use(cors({
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('❌ Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Make io accessible in routes
 app.set('io', io);
 
-// Routes
+// Routes (AFTER CORS middleware)
 app.use('/api/auth', authRoutes);
 app.use('/api/team-auth', teamAuthRoutes);
 app.use('/api/team-data', teamDataRoutes);
@@ -56,7 +92,11 @@ app.use('/api/superadmin', superadminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        allowedOrigins: allowedOrigins 
+    });
 });
 
 // Setup WebSocket handlers
@@ -69,13 +109,15 @@ const startServer = async () => {
     try {
         // Connect to MongoDB
         await connectDB();
-
-        // Start HTTP server - NO 'localhost' binding!
-        httpServer.listen(PORT, () => {
+        
+        // Start HTTP server - Bind to 0.0.0.0 for Render
+        httpServer.listen(PORT, '0.0.0.0', () => {
             console.log(`\n🚀 Market Matrix Server Running`);
             console.log(`📍 Port: ${PORT}`);
             console.log(`🔌 WebSocket: ws://0.0.0.0:${PORT}`);
-            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🔐 CORS Origins:`, allowedOrigins);
+            console.log('\n');
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
