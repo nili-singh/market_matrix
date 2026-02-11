@@ -1,12 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import Admin from '../models/Admin.js';
 
 const router = express.Router();
 
 /**
  * POST /api/auth/login
- * Admin login
+ * Admin login - Simple env-based authentication
  */
 router.post('/login', async (req, res) => {
     try {
@@ -16,21 +15,17 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password required' });
         }
 
-        const admin = await Admin.findOne({ username });
+        // Simple env-based authentication
+        const envUsername = process.env.ADMIN_USERNAME || 'admin';
+        const envPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-        if (!admin) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const isMatch = await admin.comparePassword(password);
-
-        if (!isMatch) {
+        if (username !== envUsername || password !== envPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // Generate JWT token
         const token = jwt.sign(
-            { id: admin._id, username: admin.username },
+            { username: username },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -39,8 +34,7 @@ router.post('/login', async (req, res) => {
             success: true,
             token,
             admin: {
-                id: admin._id,
-                username: admin.username,
+                username: username,
             },
         });
     } catch (error) {
