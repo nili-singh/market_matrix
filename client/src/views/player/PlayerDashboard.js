@@ -29,40 +29,26 @@ export default async function PlayerDashboard() {
 
     async function loadDashboard() {
         try {
-            // Use environment-aware URL
-            const API_BASE_URL = window.location.hostname === 'localhost'
-                ? 'http://localhost:3000/api'
-                : 'https://market-matrix-t2nc.onrender.com/api';
+            const data = await api.getTeamDashboard();
+            dashboardData = data.team;
+            isLoading = false;
+            render();
+        } catch (error) {
+            console.error('Load dashboard error:', error);
 
-            const response = await fetch(`${API_BASE_URL}/team-data/dashboard`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (response.status === 401) {
-                // Token expired or invalid
+            // Handle auth errors
+            if (error.message && (error.message.includes('token') || error.message.includes('auth'))) {
                 localStorage.removeItem('team_token');
                 window.location.href = '/team-login';
                 return;
             }
 
-            if (!response.ok) {
-                throw new Error('Failed to load dashboard');
-            }
-
-            const data = await response.json();
-            dashboardData = data.team;
-            isLoading = false;
-            render();
-
-        } catch (error) {
-            console.error('Load dashboard error:', error);
             container.innerHTML = `
                 <div class="error-container">
                     <h2>Error Loading Dashboard</h2>
                     <p>${error.message}</p>
                     <button class="btn btn-primary" onclick="location.reload()">Retry</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='/team-login'">Login Again</button>
                 </div>
             `;
         }

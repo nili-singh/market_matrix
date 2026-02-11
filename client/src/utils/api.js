@@ -116,6 +116,15 @@ class ApiClient {
         return this.request('/api/leaderboard/public');
     }
 
+    // Team endpoints
+    async getTeamDashboard() {
+        return this.request('/api/team-data/dashboard', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('team_token')}`
+            }
+        });
+    }
+
     // Admin endpoints
     async getLeaderboard() {
         return this.request('/api/admin/leaderboard');
