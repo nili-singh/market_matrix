@@ -1,11 +1,6 @@
 import AnimatedBarChart from '../../components/player/AnimatedBarChart.js';
 import socket from '../../utils/socket.js';
-
-// Import graph styles
-const graphStyles = document.createElement('link');
-graphStyles.rel = 'stylesheet';
-graphStyles.href = '/src/styles/graphStyles.css';
-document.head.appendChild(graphStyles);
+import '../../styles/graphStyles.css';
 
 /**
  * Player Graph View
