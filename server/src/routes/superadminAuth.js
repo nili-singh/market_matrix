@@ -1,12 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import SuperAdmin from '../models/SuperAdmin.js';
 
 const router = express.Router();
 
 /**
  * POST /api/superadmin/login
- * Super admin login
+ * Super admin login - Simple env-based authentication
  */
 router.post('/login', async (req, res) => {
     try {
@@ -16,23 +15,18 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password required' });
         }
 
-        const superAdmin = await SuperAdmin.findOne({ username });
+        // Simple env-based authentication
+        const envUsername = process.env.SUPERADMIN_USERNAME || 'superadmin';
+        const envPassword = process.env.SUPERADMIN_PASSWORD || 'superadmin';
 
-        if (!superAdmin) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const isMatch = await superAdmin.comparePassword(password);
-
-        if (!isMatch) {
+        if (username !== envUsername || password !== envPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // Generate JWT token with isSuperAdmin flag
         const token = jwt.sign(
             {
-                id: superAdmin._id,
-                username: superAdmin.username,
+                username: username,
                 isSuperAdmin: true  // Flag to distinguish from regular admin
             },
             process.env.JWT_SECRET,
@@ -43,8 +37,7 @@ router.post('/login', async (req, res) => {
             success: true,
             token,
             superAdmin: {
-                id: superAdmin._id,
-                username: superAdmin.username,
+                username: username,
             },
         });
     } catch (error) {
