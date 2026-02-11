@@ -82,8 +82,12 @@ export default function TeamLogin() {
             loginBtn.textContent = 'Logging in...';
             hideError();
 
-            // Call team login API
-            const response = await fetch('https://market-matrix-t2nc.onrender.com/api/team-auth/login', {
+            // Call team login API - use environment-aware URL
+            const API_BASE_URL = window.location.hostname === 'localhost'
+                ? 'http://localhost:3000/api'
+                : 'https://market-matrix-t2nc.onrender.com/api';
+
+            const response = await fetch(`${API_BASE_URL}/team-auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,4 +1,6 @@
-const API_BASE_URL = 'https://market-matrix-t2nc.onrender.com/api';
+const API_BASE_URL =  process.env.NODE_ENV === 'production'
+  ? 'https://market-matrix-t2nc.onrender.com/api'
+  : 'http://localhost:3000/api';
 
 class ApiClient {
     constructor() {

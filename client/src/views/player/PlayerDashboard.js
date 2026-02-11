@@ -29,7 +29,12 @@ export default async function PlayerDashboard() {
 
     async function loadDashboard() {
         try {
-            const response = await fetch('https://market-matrix-t2nc.onrender.com/api/team-data/dashboard', {
+            // Use environment-aware URL
+            const API_BASE_URL = window.location.hostname === 'localhost'
+                ? 'http://localhost:3000/api'
+                : 'https://market-matrix-t2nc.onrender.com/api';
+
+            const response = await fetch(`${API_BASE_URL}/team-data/dashboard`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

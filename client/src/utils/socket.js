@@ -9,7 +9,12 @@ class SocketManager {
     connect() {
         if (this.socket?.connected) return this.socket;
 
-        this.socket = io('https://market-matrix-t2nc.onrender.com', {
+        // Use environment-aware URL
+        const SOCKET_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
+            : 'https://market-matrix-t2nc.onrender.com';
+
+        this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionDelay: 1000,
