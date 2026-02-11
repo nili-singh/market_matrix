@@ -12,8 +12,7 @@ export default function RoundControls(container) {
 
       // Get round state
       try {
-        const roundResponse = await fetch('/api/rounds/state');
-        roundState = await roundResponse.json();
+        roundState = await api.getRoundState();
       } catch (error) {
         console.error('Error fetching round state:', error);
         roundState = {
@@ -93,15 +92,7 @@ export default function RoundControls(container) {
             nextRoundBtn.disabled = true;
             nextRoundBtn.textContent = 'Advancing...';
 
-            const response = await fetch('/api/rounds/next', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-              },
-            });
-
-            const result = await response.json();
+            const result = await api.nextRound();
 
             if (result.success) {
               alert(result.message);
@@ -136,15 +127,7 @@ export default function RoundControls(container) {
             previousRoundBtn.disabled = true;
             previousRoundBtn.textContent = 'Rolling back...';
 
-            const response = await fetch('/api/rounds/previous', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-              },
-            });
-
-            const result = await response.json();
+            const result = await api.previousRound();
 
             if (result.success) {
               alert(result.message);

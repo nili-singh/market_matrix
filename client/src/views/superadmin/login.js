@@ -3,7 +3,9 @@
  * Separate authentication for super admin panel
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://market-matrix-t2nc.onrender.com';
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://market-matrix-t2nc.onrender.com'
+    : 'http://localhost:3000';
 
 export default function superAdminLogin(container) {
     const render = () => {

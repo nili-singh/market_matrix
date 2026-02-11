@@ -1,6 +1,6 @@
-const API_BASE_URL =  process.env.NODE_ENV === 'production'
-  ? 'https://market-matrix-t2nc.onrender.com/api'
-  : 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+    ? 'https://market-matrix-t2nc.onrender.com/api'
+    : 'http://localhost:3000/api';
 
 class ApiClient {
     constructor() {
@@ -128,13 +128,23 @@ class ApiClient {
     }
 
     async nextRound() {
-        return this.request('/admin/round/next', {
+        return this.request('/rounds/next', {
             method: 'POST',
         });
     }
 
     async nextTeam() {
         return this.request('/admin/team/next', {
+            method: 'POST',
+        });
+    }
+
+    async getRoundState() {
+        return this.request('/rounds/state');
+    }
+
+    async previousRound() {
+        return this.request('/rounds/previous', {
             method: 'POST',
         });
     }

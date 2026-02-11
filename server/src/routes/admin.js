@@ -181,7 +181,8 @@ router.post('/round/start', async (req, res) => {
  */
 router.post('/round/next', async (req, res) => {
     try {
-        const gameState = await roundService.nextRound();
+        const result = await roundService.nextRound();
+        const gameState = result.gameState;
 
         // Emit socket event
         req.app.get('io').emit('round:change', {
