@@ -1,4 +1,6 @@
 import socket from './utils/socket.js';
+import './styles/index.css';
+import './styles/superadmin.css';
 import adminLogin from './views/admin/login.js';
 import adminDashboard from './views/admin/dashboard.js';
 import playerView from './views/player/index.js';

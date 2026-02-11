@@ -10,9 +10,9 @@ class SocketManager {
         if (this.socket?.connected) return this.socket;
 
         // Use environment-aware URL
-        const SOCKET_URL = window.location.hostname === 'localhost'
+        const SOCKET_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : 'https://market-matrix-t2nc.onrender.com';
+            : window.location.origin);
 
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
