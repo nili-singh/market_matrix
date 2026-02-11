@@ -70,11 +70,11 @@ const startServer = async () => {
         // Connect to MongoDB
         await connectDB();
 
-        // Start HTTP server
+        // Start HTTP server - NO 'localhost' binding!
         httpServer.listen(PORT, () => {
             console.log(`\n🚀 Market Matrix Server Running`);
-            console.log(`📍 HTTP: http://localhost:${PORT}`);
-            console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
+            console.log(`📍 Port: ${PORT}`);
+            console.log(`🔌 WebSocket: ws://0.0.0.0:${PORT}`);
             console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}\n`);
         });
     } catch (error) {
