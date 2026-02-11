@@ -1,7 +1,7 @@
 // Quick API test script
 import fetch from 'node-fetch';
 
-const API_URL = 'http://localhost:3000/api/assets/history';
+const API_URL = 'https://market-matrix-t2nc.onrender.com/api/assets/history';
 
 console.log('Fetching asset history from:', API_URL);
 

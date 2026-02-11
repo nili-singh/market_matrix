@@ -5,11 +5,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://market-matrix-t2nc.onrender.com',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:3000',
+        target: 'https://market-matrix-t2nc.onrender.com',
         ws: true,
       },
     },

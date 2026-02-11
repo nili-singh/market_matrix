@@ -5,7 +5,7 @@
 
 import socket from '../../utils/socket.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://market-matrix-t2nc.onrender.com';
 
 export default function superAdminResetPanel(container) {
     let gameStatus = null;

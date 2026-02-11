@@ -83,7 +83,7 @@ export default function TeamLogin() {
             hideError();
 
             // Call team login API
-            const response = await fetch('http://localhost:3000/api/team-auth/login', {
+            const response = await fetch('https://market-matrix-t2nc.onrender.com/api/team-auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

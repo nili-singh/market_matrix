@@ -29,7 +29,7 @@ export default async function PlayerDashboard() {
 
     async function loadDashboard() {
         try {
-            const response = await fetch('http://localhost:3000/api/team-data/dashboard', {
+            const response = await fetch('https://market-matrix-t2nc.onrender.com/api/team-data/dashboard', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

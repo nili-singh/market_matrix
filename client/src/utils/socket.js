@@ -9,7 +9,7 @@ class SocketManager {
     connect() {
         if (this.socket?.connected) return this.socket;
 
-        this.socket = io('http://localhost:3000', {
+        this.socket = io('https://market-matrix-t2nc.onrender.com', {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionDelay: 1000,

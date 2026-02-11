@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 
 async function testGraphAPI() {
     try {
-        const response = await fetch('http://localhost:3000/api/assets/history');
+        const response = await fetch('https://market-matrix-t2nc.onrender.com/api/assets/history');
         const data = await response.json();
 
         console.log('\n=== API Response ===');
