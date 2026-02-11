@@ -3,9 +3,7 @@
  * Separate authentication for super admin panel
  */
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://market-matrix-t2nc.onrender.com'
-    : 'http://localhost:3000';
+import api from '../../utils/api.js';
 
 export default function superAdminLogin(container) {
     const render = () => {
@@ -87,25 +85,14 @@ export default function superAdminLogin(container) {
         submitBtn.disabled = true;
 
         try {
-            const response = await fetch(`${API_URL}/api/superadmin/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            });
+            const data = await api.superAdminLogin(username, password);
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                // Store token in localStorage
-                localStorage.setItem('superadmin_token', data.token);
+            if (data.success) {
+                // Store user info
                 localStorage.setItem('superadmin_username', data.superAdmin.username);
 
                 // Navigate to super admin panel
                 window.navigateTo('/superadmin/panel');
-            } else {
-                throw new Error(data.error || 'Login failed');
             }
         } catch (error) {
             console.error('Super admin login error:', error);

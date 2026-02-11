@@ -66,6 +66,20 @@ class ApiClient {
         return data;
     }
 
+    async superAdminLogin(username, password) {
+        const data = await this.request('/api/superadmin/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (data.token) {
+            localStorage.setItem('superadmin_token', data.token);
+            // We don't share the same token storage as regular admin
+        }
+
+        return data;
+    }
+
     async verifyToken() {
         return this.request('/api/auth/verify', {
             method: 'POST',
