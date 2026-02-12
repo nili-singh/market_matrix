@@ -25,8 +25,8 @@ export default function PlayerGraph(container) {
         // Fetch current round
         await fetchGameState();
 
-        // Only show graph if we're in Round 2 or later
-        if (currentRound < 2) {
+        // Only show graph if we're in Round 1 or later
+        if (currentRound < 1) {
             container.innerHTML = `
                 <div class="player-graph-container">
                     <header class="graph-header">
@@ -44,13 +44,13 @@ export default function PlayerGraph(container) {
                         <div style="text-align: center; max-width: 600px;">
                             <h2 style="font-size: 2rem; color: #fff; margin-bottom: 1rem;">Graph Not Available Yet</h2>
                             <p style="font-size: 1.125rem; color: #9CA3AF; margin-bottom: 2rem;">
-                                The asset value graph will be available once <strong>Round 2</strong> begins.
+                                The asset value graph will be available once <strong>Round 1</strong> begins.
                             </p>
                             <p style="font-size: 1rem; color: #6B7280;">
-                                Current Round: <strong style="color: #880d1e; font-size: 1.5rem;">Round ${currentRound === 0 ? '1' : currentRound}</strong>
+                                Current Round: <strong style="color: #880d1e; font-size: 1.5rem;">Round ${currentRound === 0 ? '0' : currentRound}</strong>
                             </p>
                             <p style="font-size: 0.875rem; color: #6B7280; margin-top: 1rem;">
-                                Please wait for the admin to start Round 2...
+                                Please wait for the game to start...
                             </p>
                         </div>
                     </div>
@@ -59,7 +59,7 @@ export default function PlayerGraph(container) {
             return;
         }
 
-        // Show graph (Round 2+)
+        // Show graph (Round 1+)
         container.innerHTML = `
             <div class="player-graph-container">
                 <header class="graph-header">
@@ -89,11 +89,11 @@ export default function PlayerGraph(container) {
                         <div id="baseChartContainer" class="chart-wrapper"></div>
                     </div>
 
-                    <!-- R1+ Graph (Live Values) -->
+                    <!-- Current Round Graph (Live Values) -->
                     <div class="graph-section live-graph-section">
                         <div class="graph-section-header">
-                            <h2>R${currentRound - 1} - Previous Round Values</h2>
-                            <p class="graph-subtitle">Last round's trading & card effects</p>
+                            <h2>R${currentRound} - Current Round Values</h2>
+                            <p class="graph-subtitle">Live trading & card effects</p>
                         </div>
                         <div id="liveChartContainer" class="chart-wrapper"></div>
                     </div>
