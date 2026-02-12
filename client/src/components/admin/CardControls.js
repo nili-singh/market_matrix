@@ -2,12 +2,6 @@ import api from '../../utils/api.js';
 import socket from '../../utils/socket.js';
 import CardDeck from './CardDeck.js';
 
-// Import card deck styles
-const cardDeckStyles = document.createElement('link');
-cardDeckStyles.rel = 'stylesheet';
-cardDeckStyles.href = '/src/styles/cardDeck.css';
-document.head.appendChild(cardDeckStyles);
-
 export default function CardControls(container) {
   let teams = [];
   let lastDrawnCard = null;

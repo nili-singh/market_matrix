@@ -1,3 +1,6 @@
+/* Import card deck styles */
+@import './cardDeck.css';
+
 :root {
   /* Color Palette - Black & Dark Red Theme */
   --color-bg-primary: #000000;
