@@ -31,7 +31,8 @@ router.get('/leaderboard', async (req, res) => {
  */
 router.get('/teams', async (req, res) => {
     try {
-        const teams = await Team.find();
+        // Exclude password field to prevent hashed password from being sent to frontend
+        const teams = await Team.find().select('-password');
         res.json({ success: true, teams });
     } catch (error) {
         console.error('Get teams error:', error);
