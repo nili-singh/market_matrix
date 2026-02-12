@@ -264,6 +264,9 @@ router.post('/card/draw/:teamId', async (req, res) => {
             nextTeamId
         );
 
+        // Create/update snapshot for current round to persist graph data
+        await roundService.createSnapshot('GAME_STATE');
+
         // Emit socket event
         req.app.get('io').emit('card:drawn', {
             teamId: req.params.teamId,
@@ -302,6 +305,9 @@ router.post('/trade', async (req, res) => {
         } else {
             return res.status(400).json({ error: 'Invalid action' });
         }
+
+        // Create/update snapshot for current round to persist graph data
+        await roundService.createSnapshot('GAME_STATE');
 
         // Emit socket events
         if (result.priceChanged) {
@@ -390,6 +396,9 @@ router.post('/trade/batch', async (req, res) => {
             }
         }
 
+        // Create/update snapshot for current round to persist graph data
+        await roundService.createSnapshot('GAME_STATE');
+
         // Emit socket events after all trades
         if (anyPriceChanged) {
             const assets = await assetService.getAllAssets();
@@ -469,6 +478,9 @@ router.put('/assets/:assetType', async (req, res) => {
             newValue,
             gameState.currentRound
         );
+
+        // Create/update snapshot for current round to persist graph data
+        await roundService.createSnapshot('GAME_STATE');
 
         // Emit socket event
         const assets = await assetService.getAllAssets();
