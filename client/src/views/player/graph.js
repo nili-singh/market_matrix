@@ -14,10 +14,11 @@ export default function PlayerGraph(container) {
 
     async function fetchGameState() {
         try {
-            const response = await api.request('/api/public/game-state');
+            const response = await api.request('/api/game-state');
             currentRound = response.gameState?.currentRound || 0;
         } catch (error) {
             console.error('Error fetching game state:', error);
+            currentRound = 0;
         }
     }
 
