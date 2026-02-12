@@ -117,10 +117,41 @@ teamSchema.pre('save', async function (next) {
     try {
         // Generate teamId if not present
         if (!this.teamId) {
-            // Use this.constructor to avoid circular reference
-            const count = await this.constructor.countDocuments();
-            const nextNumber = count + 1;
-            this.teamId = `TEAM_${String(nextNumber).padStart(3, '0')}`;
+            // Find the highest existing team number
+            const teams = await this.constructor.find({}, { teamId: 1 }).sort({ teamId: -1 }).limit(1);
+
+            let nextNumber = 1;
+            if (teams.length > 0 && teams[0].teamId) {
+                // Extract number from TEAM_XXX format
+                const match = teams[0].teamId.match(/TEAM_(\d+)/);
+                if (match) {
+                    nextNumber = parseInt(match[1], 10) + 1;
+                }
+            }
+
+            // Generate teamId with retry mechanism (max 10 attempts)
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (attempts < maxAttempts) {
+                const proposedId = `TEAM_${String(nextNumber).padStart(3, '0')}`;
+
+                // Check if this ID already exists
+                const exists = await this.constructor.findOne({ teamId: proposedId });
+
+                if (!exists) {
+                    this.teamId = proposedId;
+                    break;
+                }
+
+                // If exists, try next number
+                nextNumber++;
+                attempts++;
+            }
+
+            if (attempts >= maxAttempts) {
+                throw new Error('Failed to generate unique team ID after maximum attempts');
+            }
         }
 
         // Hash password if it's new or modified (and not already hashed)
