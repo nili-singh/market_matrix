@@ -88,7 +88,7 @@ export default function CardDeck(container, { selectedTeamId = null, onCardDrawn
             // Fetch current deck state
             const response = await api.getDeckState();
             deckState = response.deckState;
-            allCards = deckState?.cards || [];
+            allCards = response.cards || []; // Fix: Get cards from response, not deckState
 
             const remainingCards = allCards.length;
             const hasTeamSelected = Boolean(currentTeamId);

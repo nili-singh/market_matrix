@@ -224,9 +224,14 @@ router.post('/team/next', async (req, res) => {
 router.post('/card/shuffle', async (req, res) => {
     try {
         const { currentRound } = req.body;
-        const cards = await cardService.shuffleDeck(currentRound || 0);
+        const result = await cardService.shuffleDeck(currentRound || 0);
 
-        res.json({ success: true, message: 'Deck shuffled', cardCount: cards.length });
+        res.json({
+            success: true,
+            message: 'Deck shuffled',
+            cardCount: result.shuffled.length,
+            deckState: result.deckState
+        });
     } catch (error) {
         console.error('Shuffle deck error:', error);
         res.status(500).json({ error: error.message });
