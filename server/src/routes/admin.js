@@ -48,11 +48,11 @@ router.post('/teams', async (req, res) => {
     try {
         const { teamName, members, registrationType, registrationFee, round1Qualified } = req.body;
 
-        // Generate random password (8 characters: letters + numbers)
+        // Generate random password (5 characters: uppercase + numbers for easy typing)
         function generatePassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars: I, O, 0, 1
             let password = '';
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 5; i++) {
                 password += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return password;

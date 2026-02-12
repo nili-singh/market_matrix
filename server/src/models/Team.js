@@ -95,23 +95,6 @@ const teamSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-// Generate random password (8 characters: letters + numbers)
-function generatePassword() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-}
-
-// Generate unique team ID
-async function generateTeamId() {
-    const count = await mongoose.model('Team').countDocuments();
-    const nextNumber = count + 1;
-    return `TEAM_${String(nextNumber).padStart(3, '0')}`;
-}
-
 // Pre-save hook: Auto-generate teamId and hash password
 teamSchema.pre('save', async function (next) {
     try {
